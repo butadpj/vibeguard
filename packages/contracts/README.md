@@ -2,7 +2,7 @@
 
 Start here for API payloads, shared models, statuses, and dummy data. Import types from `@vibeguard/contracts`; import fixtures from `@vibeguard/contracts/examples`.
 
-These contracts describe the agreed first integration shape. The runner implements health, ZIP import, project lookup, and the US5 approval/export/recheck routes listed below. Preparation and goal routes are implemented with adapter interfaces; app startup and local model conversation are not configured yet. Baseline checks, repair, and cancellation remain `501 not_implemented` placeholders. US5 requires checked candidate files and protected checks that earlier stages do not yet produce. TypeScript types do not validate HTTP input; add runtime validation when implementing routes.
+These contracts describe the agreed first integration shape. The runner implements health, ZIP import, project lookup, and the US5 approval/export/recheck routes listed below. Preparation and goal routes are implemented with adapter interfaces; app startup and local model conversation are not configured yet. Baseline API plumbing is implemented with a verifier adapter; the real protected integration suite is not connected yet. Repair and cancellation remain `501 not_implemented` placeholders. US5 requires checked candidate files and protected checks that earlier stages do not yet produce. TypeScript types do not validate HTTP input; add runtime validation when implementing routes.
 
 ```ts
 import type { GetProjectResponse, GetJobResponse } from '@vibeguard/contracts';
@@ -30,7 +30,7 @@ Keep model, inference, and harness diagnostics inside the runner. Report blocker
 
 `Project` is the dashboard snapshot across all five stories. US1 uses `id`, `name`, `setup`, `originalVersion`, `previews`, and `activeJobId`. Later-story fields stay null or empty until those operations run. Keep version identity for protected checks and exact-version approval.
 
-The demo fixture directory currently contains instructions only. Wire the chosen app's concrete setup checks into the runner when its runnable fixture is available.
+The importable demo is `fixtures/demo-crud/customer-tracker.zip`, with reviewed source beside it. Automatic startup and the real protected suite are not connected yet. The agreed fixture is ordinary JavaScript with `supabase-js` and local Supabase backed by real PostgreSQL. Wire its concrete setup checks into the runner when the runnable fixture is available.
 
 ## Operations and implementation status
 
@@ -44,7 +44,7 @@ Request/response aliases live in [operations/api.ts](src/operations/api.ts). Rea
 | `POST /api/projects/:id/prepare` | `PrepareProjectResponse` | `acceptedJobExample`, `preparingJobExample`, `preparedJobExample` | Route implemented; environment adapter pending |
 | `POST /api/projects/:id/messages` | `SendMessageRequest` → `SendMessageResponse` | `messageRequestExample`, `conversationJobExample` | Route implemented; local conversation adapter pending |
 | `POST /api/projects/:id/goal/confirm` | `ConfirmGoalRequest` → `ConfirmGoalResponse` | `confirmGoalRequestExample`, `confirmedGoalExample` | Implemented; requires the current goal revision |
-| `POST /api/projects/:id/checks` | `RunChecksRequest` → `RunChecksResponse` | `checksRequestExample`, `baselineJobExample` | Scaffolded (501) |
+| `POST /api/projects/:id/checks` | `RunChecksRequest` → `RunChecksResponse` | `checksRequestExample`, `baselineJobExample` | Route implemented; protected integration verifier pending |
 | `POST /api/projects/:id/repairs` | `RepairRequest` → `RepairResponse` | `repairRequestExample`, `repairJobExample`, `unsuccessfulRepairJobExample` | Scaffolded (501) |
 | `GET /api/jobs/:id` | `GetJobResponse` | Job examples, including `interruptedJobExample` | Implemented for in-memory jobs (US5); no restart recovery yet |
 | `POST /api/jobs/:id/cancel` | `CancelJobResponse` | `cancelledJobExample` | Scaffolded (501) |

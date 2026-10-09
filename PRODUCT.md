@@ -20,6 +20,8 @@ V1 demo scope is one simple CRUD app with a real local database. Setup must run 
 
 Founders open test copies through links in a new tab. The original and repaired copies have separate test data.
 
+V1 automated verification uses high-level integration tests across application behavior and real local database state. The founder performs end-to-end testing in the candidate app preview before deciding whether to approve. “Fix checked” means the required integration checks passed for that version; it does not mean human QA or approval is complete.
+
 ## Stack
 Accepted team-repo starting point: React + Vite + TypeScript dashboard and a long-running Node.js + TypeScript local runner in a pnpm monorepo. The runner serves the built dashboard and API together. Founder installation will package both; installer format is undecided.
 

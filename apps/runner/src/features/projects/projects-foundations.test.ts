@@ -102,6 +102,64 @@ afterEach(async () => {
 });
 
 describe('US1/US2 backend foundations', () => {
+  it('imports the checked-in customer tracker ZIP and preserves every reviewed source file', async () => {
+    const fixtureRoot = new URL(
+      '../../../../../fixtures/demo-crud/',
+      import.meta.url,
+    );
+    const archive = await readFile(
+      new URL('customer-tracker.zip', fixtureRoot),
+    );
+    const body = new FormData();
+    body.append(
+      'file',
+      new Blob([new Uint8Array(archive)]),
+      'customer-tracker.zip',
+    );
+    body.append('name', 'Customer tracker');
+    const imported = await client.request('/api/projects', {
+      method: 'POST',
+      headers: { 'X-VibeGuard-Request': '1' },
+      body,
+    });
+    expect(imported.status).toBe(201);
+    const demo: Project = await imported.json();
+    expect(demo).toMatchObject({
+      name: 'Customer tracker',
+      setup: { status: 'not_prepared' },
+      previews: [],
+    });
+    const original = join(directory, 'projects', demo.id, 'original');
+    const source = new URL('customer-tracker/', fixtureRoot);
+    async function compare(relative = '') {
+      for (const entry of await readdir(new URL(relative, source), {
+        withFileTypes: true,
+      })) {
+        const child = `${relative}${entry.name}`;
+        if (entry.isDirectory()) await compare(`${child}/`);
+        else
+          expect(await readFile(join(original, child))).toEqual(
+            await readFile(new URL(child, source)),
+          );
+      }
+    }
+    await compare();
+    expect(
+      await readFile(join(directory, 'projects', demo.id, 'upload.zip')),
+    ).toEqual(archive);
+    expect(
+      await createFileWorkspace(directory).versionDigest(
+        demo.id,
+        demo.originalVersion.id,
+      ),
+    ).toBe(demo.originalVersion.contentDigest);
+    const snapshot = await client.request(`/api/projects/${demo.id}`);
+    expect(await snapshot.json()).toMatchObject({
+      id: demo.id,
+      setup: { status: 'not_prepared' },
+    });
+  });
+
   it('reports missing app/model adapters through jobs without inventing readiness or replies', async () => {
     const prepared = await completed(await post('/prepare'));
     expect(prepared).toMatchObject({

@@ -244,7 +244,7 @@ Do not run a second model concurrently or switch during an active repair. A fall
 
 ## 9. Rehearse offline and record the result
 
-Download app dependencies, Docker images, and verifier browser binaries before disconnecting. Start both inference paths once to expose lazy downloads. Then save work, restart WSL/services, disconnect internet, and repeat the supported founder flow. Have the agent enforce/observe external network restrictions; Wi-Fi disconnection alone may leave another internet path.
+Download app dependencies, Docker images, and integration-test tooling before disconnecting. Start both inference paths once to expose lazy downloads. Then save work, restart WSL/services, disconnect internet, and repeat the supported founder flow. After automated integration checks pass, try the candidate preview end to end before approving. Have the agent enforce/observe external network restrictions; Wi-Fi disconnection alone may leave another internet path.
 
 Keep a local setup report outside exported projects with these entries:
 

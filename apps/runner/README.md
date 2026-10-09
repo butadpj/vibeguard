@@ -17,12 +17,12 @@ For direct Node development, `pnpm dev` still starts both apps. The runner defau
 | [src/app.ts](src/app.ts) | Mount feature routes, API errors, and the built dashboard |
 | [src/features/projects](src/features/projects/projects-routes.ts) | Import, project snapshot, preparation |
 | [src/features/goals](src/features/goals/goals-routes.ts) | Conversation and goal confirmation |
-| [src/features/checks](src/features/checks/checks-routes.ts) | Baseline checks |
+| [src/features/checks](src/features/checks/checks-routes.ts) | Baseline jobs and evidence; verifier adapter pending |
 | [src/features/repairs](src/features/repairs/repairs-routes.ts) | Repair and recheck |
 | [src/features/approvals](src/features/approvals/approvals-routes.ts) | Approve the checked version and keep its checks |
 | [src/features/exports](src/features/exports/exports-routes.ts) | Save an approved project as a ZIP or folder |
 | [src/features/jobs](src/features/jobs/jobs-routes.ts) | Job polling (cancellation still `501`) |
-| [src/features/checks](src/features/checks/checks-routes.ts) | Retained checks on later versions (baseline checks still `501`) |
+| [src/features/checks](src/features/checks/checks-routes.ts) | Retained checks on later versions (real baseline suite not yet connected) |
 | [src/lib/release-workspace.ts](src/lib/release-workspace.ts) | Managed project/version storage that approval and export read |
 | [src/lib/job-board.ts](src/lib/job-board.ts) | One active in-memory job |
 | [src/lib/request-protection.ts](src/lib/request-protection.ts) | Local Host/origin and request-header protection for every write route |
@@ -63,3 +63,11 @@ Preparation, messaging, and goal confirmation are implemented. The default serve
 Project reads report the active job from process memory; it is not persisted. Message input is limited to 4,000 characters, proposed description/expected behavior to 4,000 each, performance action to 500, and model reply to 6,000. Model input includes the last 20 messages. Malformed JSON and invalid structured output fail without publishing an assistant reply or goal. Founder messages survive a model failure.
 
 See the [US1/US2 handoff](../../context/us1-us2-backend-handoff.md). Cancellation, real app startup, local model connectivity, and process/container restart behavior remain outstanding. Tests use injected adapter fakes and do not establish those capabilities.
+
+## Baseline jobs and evidence
+
+`POST /api/projects/:id/checks` accepts `{ versionId, goalRevisionId }`. It requires ready app setup, the imported original version, and a currently confirmed goal. The operation runs as a `check` job in the same single-task runner. Refresh the project to read its persisted `baseline`; poll the job for the result and progress. Successful job completion can contain a failed or inconclusive check verdict.
+
+Inject a trusted `BaselineChecks` adapter through `createApp({ baselineChecks })`. Its `checkSetId` resolves to the runner-managed project's check-set directory. The runner creates a fresh editable copy, validates structured evidence, checks original/suite digests before publication, and removes the scratch copy. The adapter owns real app/database startup, finite timeouts, and cleanup. It must exercise application behavior and persisted data with goal/create/read/update/delete coverage. Missing coverage is inconclusive. The default Docker server has no verifier adapter and reports `check_unavailable` after setup/goal gates pass. These routes do not establish actual CRUD verification yet.
+
+Digest checks do not sandbox a process. Enforce protected suite/original/metadata permissions when connecting the agent. See the [integration handoff](../../context/us1-us2-backend-handoff.md).
