@@ -9,9 +9,11 @@ const input = {
 };
 it('uses local structured conversation and leaves confirmation to the founder', async () => {
   const output = {
-    reply: 'Confirm this goal.',
+    reply:
+      'Here’s the goal: Saved customer edits survive refreshing. Review it below, then confirm to continue.',
     proposedGoal: {
-      description: 'Lost edits',
+      description:
+        'Save a customer edit and refresh: Customer edits revert to old values.',
       expectedBehavior: 'Saved customer edits survive refreshing.',
       performance: null,
     },
@@ -19,7 +21,13 @@ it('uses local structured conversation and leaves confirmation to the founder', 
   const request = vi.fn<typeof fetch>().mockResolvedValue(
     Response.json({
       done: true,
-      message: { content: JSON.stringify(output) },
+      message: {
+        content: JSON.stringify({
+          action: 'Save a customer edit and refresh',
+          actual: 'Customer edits revert to old values.',
+          expected: 'Saved customer edits survive refreshing.',
+        }),
+      },
     }),
   );
   await expect(
@@ -27,19 +35,32 @@ it('uses local structured conversation and leaves confirmation to the founder', 
       url: 'http://127.0.0.1:11434',
       model: 'qwen2.5-coder:7b',
       fetch: request,
-    })(input),
+    })({
+      ...input,
+      messages: [
+        {
+          id: 'm',
+          role: 'user',
+          text: 'I need help why is it after I edit a customer info then refresh the page it doesnt show the updated info? It still shows the old one',
+        },
+      ],
+    }),
   ).resolves.toEqual(output);
   const body = JSON.parse(String(request.mock.calls[0][1]?.body));
   expect(body).toMatchObject({
     stream: false,
     format: expect.objectContaining({
       type: 'object',
-      required: ['reply', 'proposedGoal'],
+      required: ['action', 'actual', 'expected'],
     }),
     keep_alive: '5m',
     messages: [
       expect.objectContaining({ role: 'system' }),
-      { role: 'user', content: 'Edits disappear.' },
+      {
+        role: 'user',
+        content:
+          'I need help why is it after I edit a customer info then refresh the page it doesnt show the updated info? It still shows the old one',
+      },
     ],
   });
 });
@@ -187,9 +208,11 @@ it('preserves earlier questions and answers when the founder adds the final goal
     { id: '3', role: 'user' as const, text: 'After saving and refreshing.' },
   ];
   const output = {
-    reply: 'Let’s check that saved customer edits survive refreshing.',
+    reply:
+      'Here’s the goal: Saved customer edits survive refreshing. Review it below, then confirm to continue.',
     proposedGoal: {
-      description: 'Customer edits disappear after refresh.',
+      description:
+        'Save a customer edit and refresh: Customer edits revert to old values.',
       expectedBehavior: 'Saved customer edits survive refreshing.',
       performance: null,
     },
@@ -197,7 +220,13 @@ it('preserves earlier questions and answers when the founder adds the final goal
   const request = vi.fn<typeof fetch>().mockResolvedValue(
     Response.json({
       done: true,
-      message: { content: JSON.stringify(output) },
+      message: {
+        content: JSON.stringify({
+          action: 'Save a customer edit and refresh',
+          actual: 'Customer edits revert to old values.',
+          expected: 'Saved customer edits survive refreshing.',
+        }),
+      },
     }),
   );
   await expect(
@@ -211,9 +240,7 @@ it('preserves earlier questions and answers when the founder adds the final goal
   expect(body.messages.slice(1)).toEqual(
     messages.map((message) => ({ role: message.role, content: message.text })),
   );
-  expect(body.messages[0].content).toContain(
-    'Never ask again for a fact already given',
-  );
+  expect(body.messages[0].content).toContain('Preserve earlier answers');
 });
 
 it.each([
@@ -251,3 +278,61 @@ it.each([
     ).rejects.toMatchObject({ code: 'model_unavailable' });
   },
 );
+
+it.each([
+  [
+    { action: '', actual: '', expected: '' },
+    'What were you doing when it went wrong?',
+  ],
+  [
+    { action: 'Open customers', actual: '', expected: 'Show customers' },
+    'What happens when you do that?',
+  ],
+  [
+    {
+      action: 'Open customers',
+      actual: 'A different list appears',
+      expected: '',
+    },
+    'What should happen instead?',
+  ],
+])(
+  'asks only for the missing fact instead of inventing a goal',
+  async (facts, reply) => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        done: true,
+        message: { content: JSON.stringify(facts) },
+      }),
+    );
+    await expect(
+      createGoalConversation({
+        url: 'http://localhost:11434',
+        model: 'local',
+        fetch: request,
+      })(input),
+    ).resolves.toEqual({ reply, proposedGoal: null });
+  },
+);
+
+it.each([
+  { action: 'Edit', actual: 'Lost', expected: 'Saved', extra: 'ignored' },
+  { action: 'Edit', actual: 'Lost' },
+  { action: 'Edit', actual: null, expected: 'Saved' },
+  { action: 'Edit', actual: 'Lost', expected: 'x'.repeat(1901) },
+  { action: 'Edit', actual: 'Lost\x00', expected: 'Saved' },
+])('rejects malformed local fact extraction', async (facts) => {
+  const request = vi.fn<typeof fetch>().mockResolvedValue(
+    Response.json({
+      done: true,
+      message: { content: JSON.stringify(facts) },
+    }),
+  );
+  await expect(
+    createGoalConversation({
+      url: 'http://localhost:11434',
+      model: 'local',
+      fetch: request,
+    })(input),
+  ).rejects.toMatchObject({ code: 'model_unavailable' });
+});
