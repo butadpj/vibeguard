@@ -1,6 +1,7 @@
 import { useState, useRef, type ChangeEvent } from 'react';
 
-export type SetupStatus = 'Ready' | 'Setup incomplete' | 'Unsupported setup' | null;
+export type SetupStatus =
+  'Ready' | 'Setup incomplete' | 'Unsupported setup' | null;
 
 interface ProjectPickerProps {
   onProjectReady?: (previewUrl: string) => void;
@@ -52,7 +53,9 @@ export function ProjectPicker({ onProjectReady }: ProjectPickerProps) {
       }
     } catch (err) {
       setErrorMessage(
-        err instanceof Error ? err.message : 'An error occurred during project ingestion.',
+        err instanceof Error
+          ? err.message
+          : 'An error occurred during project ingestion.',
       );
       setStatus('Unsupported setup');
     } finally {
@@ -69,9 +72,19 @@ export function ProjectPicker({ onProjectReady }: ProjectPickerProps) {
   }
 
   return (
-    <div style={{ border: '1px solid var(--color-border, #ccc)', padding: '1.5rem', borderRadius: '8px', margin: '1rem 0' }}>
+    <div
+      style={{
+        border: '1px solid var(--color-border, #ccc)',
+        padding: '1.5rem',
+        borderRadius: '8px',
+        margin: '1rem 0',
+      }}
+    >
       <h2>Project Setup & Ingestion</h2>
-      <p>Upload a project ZIP file or select a project folder to auto-detect stack and provision environment.</p>
+      <p>
+        Upload a project ZIP file or select a project folder to auto-detect
+        stack and provision environment.
+      </p>
 
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
         <button
@@ -107,7 +120,9 @@ export function ProjectPicker({ onProjectReady }: ProjectPickerProps) {
         />
       </div>
 
-      {loading && <p role="status">Detecting stack and provisioning environment…</p>}
+      {loading && (
+        <p role="status">Detecting stack and provisioning environment…</p>
+      )}
 
       {errorMessage && (
         <p style={{ color: 'red' }} role="alert">
@@ -116,13 +131,27 @@ export function ProjectPicker({ onProjectReady }: ProjectPickerProps) {
       )}
 
       {status && (
-        <div style={{ padding: '1rem', borderRadius: '6px', background: '#f5f5f5' }}>
-          <h3>Status: <strong>{status}</strong></h3>
-          {stack && <p><strong>Detected Stack:</strong> {stack}</p>}
+        <div
+          style={{
+            padding: '1rem',
+            borderRadius: '6px',
+            background: '#f5f5f5',
+          }}
+        >
+          <h3>
+            Status: <strong>{status}</strong>
+          </h3>
+          {stack && (
+            <p>
+              <strong>Detected Stack:</strong> {stack}
+            </p>
+          )}
 
           {status === 'Ready' && previewUrl && (
             <div>
-              <p style={{ color: 'green' }}>✓ Project is provisioned and ready!</p>
+              <p style={{ color: 'green' }}>
+                ✓ Project is provisioned and ready!
+              </p>
               <a
                 href={previewUrl}
                 target="_blank"
@@ -143,7 +172,8 @@ export function ProjectPicker({ onProjectReady }: ProjectPickerProps) {
 
           {status === 'Setup incomplete' && (
             <p style={{ color: '#d97706' }}>
-              ⚠️ Missing configuration or dependencies. Check project files and try again.
+              ⚠️ Missing configuration or dependencies. Check project files and
+              try again.
             </p>
           )}
 
