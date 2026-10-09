@@ -17,8 +17,7 @@ import { isSafeId, resolveInside } from './confined-path.js';
 import { directoryDigest } from './directory-digest.js';
 
 /** What approval, export, and retained checks need from project storage.
- * TEMPORARY file-backed version below. The workspace owner replaces it by
- * implementing this interface on top of real project storage. */
+ * Backed by the same managed project root used by import and preparation. */
 export interface ReleaseWorkspace {
   getProject(projectId: ProjectId): Promise<Project | null>;
   /** Frozen files of one code version, or null when unknown. Read-only. */

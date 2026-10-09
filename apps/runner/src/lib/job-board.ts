@@ -24,6 +24,7 @@ export interface JobBoard {
     work: (report: (progress: JobProgress) => void) => Promise<JobResultMap[O]>,
   ): JobId;
   get(jobId: JobId): Job | null;
+  getActive(): Job | null;
   /** Resolves when the job has finished. Used by tests. */
   whenDone(jobId: JobId): Promise<Job | null>;
 }
@@ -55,7 +56,15 @@ export function createJobBoard(): JobBoard {
         goalRevisionId: init.goalRevisionId,
         versionId: init.versionId,
         progress: {
-          step: init.operation === 'export' ? 'exporting' : 'checking',
+          step: (
+            {
+              prepare: 'preparing',
+              message: 'investigating',
+              check: 'checking',
+              repair: 'editing',
+              export: 'exporting',
+            } as const
+          )[init.operation],
           message: init.message,
         },
         repairAttempts: [],
@@ -101,6 +110,7 @@ export function createJobBoard(): JobBoard {
       return id;
     },
     get: (jobId) => jobs.get(jobId) ?? null,
+    getActive: () => (activeJobId ? (jobs.get(activeJobId) ?? null) : null),
     async whenDone(jobId) {
       await running.get(jobId);
       return jobs.get(jobId) ?? null;

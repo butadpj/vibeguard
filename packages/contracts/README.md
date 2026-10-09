@@ -2,7 +2,7 @@
 
 Start here for API payloads, shared models, statuses, and dummy data. Import types from `@vibeguard/contracts`; import fixtures from `@vibeguard/contracts/examples`.
 
-These contracts describe the agreed first integration shape. The runner implements health, ZIP import, project lookup, and the US5 approval/export/recheck routes listed below. Preparation, goals, baseline checks, repair, and cancellation remain `501 not_implemented` placeholders. US5 requires checked candidate files and protected checks that earlier stages do not yet produce. TypeScript types do not validate HTTP input; add runtime validation when implementing routes.
+These contracts describe the agreed first integration shape. The runner implements health, ZIP import, project lookup, and the US5 approval/export/recheck routes listed below. Preparation and goal routes are implemented with adapter interfaces; app startup and local model conversation are not configured yet. Baseline checks, repair, and cancellation remain `501 not_implemented` placeholders. US5 requires checked candidate files and protected checks that earlier stages do not yet produce. TypeScript types do not validate HTTP input; add runtime validation when implementing routes.
 
 ```ts
 import type { GetProjectResponse, GetJobResponse } from '@vibeguard/contracts';
@@ -41,9 +41,9 @@ Request/response aliases live in [operations/api.ts](src/operations/api.ts). Rea
 | `GET /api/health` | `HealthResponse` | `healthExample` | Implemented |
 | `POST /api/projects` | `ImportProjectRequest` → `ImportProjectResponse` | See ZIP upload below; `importedProjectExample` | Implemented |
 | `GET /api/projects/:id` | `GetProjectResponse` | `demoScenarios` | Implemented |
-| `POST /api/projects/:id/prepare` | `PrepareProjectResponse` | `acceptedJobExample`, `preparingJobExample`, `preparedJobExample` | Scaffolded (501) |
-| `POST /api/projects/:id/messages` | `SendMessageRequest` → `SendMessageResponse` | `messageRequestExample`, `conversationJobExample` | Scaffolded (501) |
-| `POST /api/projects/:id/goal/confirm` | `ConfirmGoalRequest` → `ConfirmGoalResponse` | `confirmGoalRequestExample`, `confirmedGoalExample` | Scaffolded (501) |
+| `POST /api/projects/:id/prepare` | `PrepareProjectResponse` | `acceptedJobExample`, `preparingJobExample`, `preparedJobExample` | Route implemented; environment adapter pending |
+| `POST /api/projects/:id/messages` | `SendMessageRequest` → `SendMessageResponse` | `messageRequestExample`, `conversationJobExample` | Route implemented; local conversation adapter pending |
+| `POST /api/projects/:id/goal/confirm` | `ConfirmGoalRequest` → `ConfirmGoalResponse` | `confirmGoalRequestExample`, `confirmedGoalExample` | Implemented; requires the current goal revision |
 | `POST /api/projects/:id/checks` | `RunChecksRequest` → `RunChecksResponse` | `checksRequestExample`, `baselineJobExample` | Scaffolded (501) |
 | `POST /api/projects/:id/repairs` | `RepairRequest` → `RepairResponse` | `repairRequestExample`, `repairJobExample`, `unsuccessfulRepairJobExample` | Scaffolded (501) |
 | `GET /api/jobs/:id` | `GetJobResponse` | Job examples, including `interruptedJobExample` | Implemented for in-memory jobs (US5); no restart recovery yet |
@@ -80,4 +80,4 @@ US5 retained checks: `POST /rechecks` starts a `check` job on a later version us
 
 The ZIP download route now exists. Diff and evidence artifacts still need access rules before they are served.
 
-Next step: project storage and background jobs in [the foundation plan](../../context/backend-foundations.md).
+US1/US2 consumers: read the [backend handoff](../../context/us1-us2-backend-handoff.md) for route behavior and pending adapters. Next: connect app preparation and the local model using [the foundation plan](../../context/backend-foundations.md).

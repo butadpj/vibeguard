@@ -1,4 +1,7 @@
 import express from 'express';
+import { createProjectsStore } from './features/projects/projects-store.js';
+import type { PrepareEnvironment } from './features/projects/projects-prepare.js';
+import type { GoalConversation } from './features/goals/goals-conversation.js';
 import { readConfig } from './config.js';
 import { protectRequests } from './lib/request-protection.js';
 import { existsSync } from 'node:fs';
@@ -27,12 +30,15 @@ export function createApp(
     workspace?: ReleaseWorkspace;
     jobs?: JobBoard;
     checkExecutor?: CheckExecutor;
+    prepareEnvironment?: PrepareEnvironment;
+    goalConversation?: GoalConversation;
   } = {},
 ) {
   const home = options.workspaceDirectory ?? readConfig().workspaceDirectory;
   const workspace = options.workspace ?? createFileWorkspace(home);
   const jobs = options.jobs ?? createJobBoard();
   const store = createApprovalStore(home);
+  const projects = createProjectsStore(home);
   const app = express();
   app.disable('x-powered-by');
   app.get('/api/health', (_request, response) => {
@@ -42,8 +48,22 @@ export function createApp(
     } satisfies HealthResponse);
   });
   app.use('/api', protectRequests);
-  app.use('/api', createProjectsRoutes(home));
-  app.use('/api', createGoalsRoutes());
+  app.use(
+    '/api',
+    createProjectsRoutes({
+      store: projects,
+      jobs,
+      environment: options.prepareEnvironment,
+    }),
+  );
+  app.use(
+    '/api',
+    createGoalsRoutes({
+      store: projects,
+      jobs,
+      converse: options.goalConversation,
+    }),
+  );
   app.use(
     '/api',
     createChecksRoutes({

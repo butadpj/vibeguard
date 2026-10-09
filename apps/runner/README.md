@@ -4,7 +4,7 @@ From the repo root, run `docker compose up --build`. Compose runs the backend at
 
 Compose stores workspace files in the `runner-data` volume at `/data/vibeguard`. Rebuild after backend changes. `docker compose down` stops/removes the container and retains the volume. The image currently includes only the runner; AI tooling and app containers come with their features.
 
-Jobs will run inside this runner process, one operation at a time, with in-memory progress. No queue or separate worker. Restarting the container loses job state; project files survive. Job execution is not implemented yet.
+Jobs will run inside this runner process, one operation at a time, with in-memory progress. No queue or separate worker. Restarting the container loses job state; project files survive. Export, retained recheck, preparation, and message jobs are implemented; preparation and conversation need their adapters to succeed.
 
 For direct Node development, `pnpm dev` still starts both apps. The runner defaults to loopback and `.vibeguard` relative to its working directory. Configure `VIBEGUARD_WORKSPACE` to change storage. Compose sets `VIBEGUARD_HOST=0.0.0.0` inside the container and publishes the port only on host loopback.
 
@@ -53,3 +53,13 @@ Run `pnpm --filter @vibeguard/runner test` for Vitest, or `pnpm test` from the r
 The tests send encoded HTTP requests through the real Express app with an in-process Node HTTP transport; multipart parsing, protection, routes, errors, and temporary filesystem storage stay real. They follow the platform-api pattern of app-level requests, structured response assertions, and table-driven rejection cases. Recreating the app proves persisted lookup without in-memory state; it does not prove a process or container restart. The earlier Node route/storage tests are replaced by these broader journeys. No coverage percentage is recorded.
 
 Docker startup, live HTTP health, process restart, and volume persistence still need verification on a machine with Docker available. The in-process transport does not exercise network binding or chunked HTTP responses.
+
+## US1/US2 route plumbing
+
+Preparation, messaging, and goal confirmation are implemented. The default server has no app startup or local model adapter; it reports `setup_incomplete` or `model_unavailable` through failed jobs. It does not manufacture previews, assistant replies, or proposed goals. Goal confirmation requires a current revision and creates a new confirmed revision; previous baseline, latest verification, and current approval are cleared.
+
+`createApp` accepts `prepareEnvironment` and `goalConversation` implementations. Their private interfaces live beside their feature operations. Preparation creates an editable copy under `projects/<id>/environments/<environmentId>/`, verifies original content, and accepts `ready` only with matching version/environment IDs and a local HTTP preview. The adapter owns actual app/database readiness, process cleanup (including partial startup failures), and future restart revalidation. Those are not implemented by the route plumbing. No app is executed from its imported original.
+
+Project reads report the active job from process memory; it is not persisted. Message input is limited to 4,000 characters, proposed description/expected behavior to 4,000 each, performance action to 500, and model reply to 6,000. Model input includes the last 20 messages. Malformed JSON and invalid structured output fail without publishing an assistant reply or goal. Founder messages survive a model failure.
+
+See the [US1/US2 handoff](../../context/us1-us2-backend-handoff.md). Cancellation, real app startup, local model connectivity, and process/container restart behavior remain outstanding. Tests use injected adapter fakes and do not establish those capabilities.

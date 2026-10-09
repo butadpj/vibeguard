@@ -2,7 +2,7 @@
 
 Build shared contracts first so engineers can implement their stories with matching dummy data. Replace mock implementations as the runner operations become available.
 
-Current implementation: `/api/health`, ZIP import with preserved originals, persisted project lookup, serving the dashboard, and the US5 approval/export/recheck operations on seeded checked versions. Shared TypeScript contracts and typed fixtures now live in [packages/contracts](../packages/contracts/README.md). Use its map for payloads and endpoint implementation status. Preparation, goals, baseline checks, repair, and cancellation remain planned.
+Current implementation: `/api/health`, ZIP import with preserved originals, persisted project lookup, serving the dashboard, and the US5 approval/export/recheck operations on seeded checked versions. Shared TypeScript contracts and typed fixtures now live in [packages/contracts](../packages/contracts/README.md). Use its map for payloads and endpoint implementation status. Preparation and goal API plumbing is implemented with adapter interfaces. App/database startup and local model conversation still need adapters. Baseline checks, repair, and cancellation remain planned. See the [US1/US2 handoff](us1-us2-backend-handoff.md).
 
 ## Where agents should look
 

@@ -1,11 +1,20 @@
 import { Router, raw } from 'express';
-import { readFile, lstat } from 'node:fs/promises';
-import { join } from 'node:path';
-import type { GetProjectResponse } from '@vibeguard/contracts';
-import { ApiFailure, notImplemented } from '../../lib/api-errors.js';
+import type {
+  GetProjectResponse,
+  PrepareProjectResponse,
+} from '@vibeguard/contracts';
+import { ApiFailure } from '../../lib/api-errors.js';
+import type { ProjectsStore } from './projects-store.js';
+import type { JobBoard } from '../../lib/job-board.js';
+import { handleRelease } from '../../lib/release-error.js';
+import { prepareProject, type PrepareEnvironment } from './projects-prepare.js';
 import { importProject, uploadLimit } from './projects-import.js';
 
-export function createProjectsRoutes(workspace: string) {
+export function createProjectsRoutes(deps: {
+  store: ProjectsStore;
+  jobs: JobBoard;
+  environment?: PrepareEnvironment;
+}) {
   const routes = Router();
   routes.post(
     '/projects',
@@ -51,41 +60,50 @@ export function createProjectsRoutes(workspace: string) {
         .status(201)
         .json(
           await importProject(
-            workspace,
+            deps.store.directory,
             Buffer.from(await file.arrayBuffer()),
             typeof name === 'string' ? name.trim() : 'Imported project',
           ),
         );
     },
   );
-  routes.get('/projects/:id', async (request, response) => {
-    const id = request.params.id;
-    if (
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
-        id,
-      )
-    )
-      throw new ApiFailure(404, 'not_found', 'Project not found.');
-    const directory = join(workspace, 'projects', id);
-    try {
-      if (
-        !(await lstat(directory)).isDirectory() ||
-        !(await lstat(join(directory, 'project.json'))).isFile()
-      )
-        throw new ApiFailure(404, 'not_found', 'Project not found.');
-      const project: GetProjectResponse = JSON.parse(
-        await readFile(join(directory, 'project.json'), 'utf8'),
-      );
-      response.json(project);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT')
-        throw new ApiFailure(404, 'not_found', 'Project not found.');
-      throw error;
-    }
-  });
+  routes.get(
+    '/projects/:id',
+    handleRelease(async (request, response) => {
+      const project = await deps.store.require(String(request.params.id));
+      const active = deps.jobs.getActive();
+      response.json({
+        ...project,
+        activeJobId: active?.projectId === project.id ? active.id : null,
+      } satisfies GetProjectResponse);
+    }),
+  );
   routes.post(
     '/projects/:id/prepare',
-    notImplemented('POST /projects/:id/prepare'),
+    handleRelease(async (request, response) => {
+      if (
+        request.headers['transfer-encoding'] ||
+        Number(request.headers['content-length'] ?? 0) > 0
+      )
+        throw new ApiFailure(
+          400,
+          'invalid_request',
+          'Preparation has no request body.',
+        );
+      const project = await deps.store.require(String(request.params.id));
+      const jobId = deps.jobs.start(
+        {
+          projectId: project.id,
+          operation: 'prepare',
+          goalRevisionId: null,
+          versionId: project.originalVersion.id,
+          message: 'Preparing your app.',
+        },
+        (report) =>
+          prepareProject(deps.store, project, deps.environment, report),
+      );
+      response.status(202).json({ jobId } satisfies PrepareProjectResponse);
+    }),
   );
   return routes;
 }

@@ -39,6 +39,7 @@ export const apiErrorHandler: ErrorRequestHandler = (
   }
   if (
     _error instanceof ApiFailure ||
+    _error?.status === 400 ||
     _error?.status === 413 ||
     _error?.status === 415
   ) {
@@ -48,7 +49,9 @@ export const apiErrorHandler: ErrorRequestHandler = (
         message:
           _error instanceof ApiFailure
             ? _error.message
-            : 'Upload exceeds the limit or uses unsupported encoding.',
+            : _error?.status === 400
+              ? 'Invalid request body.'
+              : 'Upload exceeds the limit or uses unsupported encoding.',
         nextStep: null,
       },
     } satisfies ErrorResponse);
