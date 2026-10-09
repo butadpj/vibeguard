@@ -11,7 +11,7 @@ import type { ReleaseWorkspace } from '../../lib/release-workspace.js';
 import type { ApprovalStore } from './approvals-store.js';
 import { directoryDigest } from '../../lib/directory-digest.js';
 
-const CRUD_SCOPES = ['create', 'read', 'update', 'delete'] as const;
+const REQUIRED_SCOPES = ['goal', 'create', 'read', 'update', 'delete'] as const;
 
 export function parseApproveRequest(body: unknown): ApproveFixRequest {
   const value = (body ?? {}) as Partial<ApproveFixRequest>;
@@ -64,6 +64,7 @@ function requireCheckedFix(project: Project, request: ApproveFixRequest) {
     throw stale('These are not the latest check results.');
   }
   if (
+    verification.projectId !== project.id ||
     verification.versionId !== candidate.id ||
     verification.goalRevisionId !== goal.revisionId
   ) {
@@ -72,6 +73,8 @@ function requireCheckedFix(project: Project, request: ApproveFixRequest) {
   const baseline = project.baseline;
   if (
     !baseline ||
+    baseline.projectId !== project.id ||
+    baseline.goalRevisionId !== goal.revisionId ||
     baseline.versionId !== project.originalVersion.id ||
     baseline.verdict !== 'failed'
   ) {
@@ -87,7 +90,7 @@ function requireCheckedFix(project: Project, request: ApproveFixRequest) {
   const notPassed = (result: VerificationResult) =>
     result.verdict !== 'passed' ||
     result.checks.some((check) => check.verdict !== 'passed') ||
-    CRUD_SCOPES.some(
+    REQUIRED_SCOPES.some(
       (scope) =>
         !result.checks.some(
           (check) => check.scope === scope && check.verdict === 'passed',

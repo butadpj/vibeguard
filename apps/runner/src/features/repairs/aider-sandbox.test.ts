@@ -125,6 +125,49 @@ it('exposes only source files, enables edits only for the fix/test, and runs sup
   expect(tests.filter((arg) => arg.startsWith('type=bind'))).toHaveLength(2);
 });
 
+it('uses individual volume files with phase permissions, host model files, and offline tests', async () => {
+  const docker = fakeDocker();
+  const agent = createAiderSandbox(
+    defaultAiderProfile,
+    '/offline/models',
+    docker.execute,
+    undefined,
+    { workspaceDirectory: '/managed', workspaceVolume: 'runner-data' },
+  );
+  for (const phase of ['diagnosis', 'edit'] as const)
+    await agent.run({
+      phase,
+      targetDirectory: '/managed/projects/project/repairs/attempt/editable',
+      prompt: 'Follow the plan.',
+    });
+  const invocations = docker.calls.filter((args) =>
+    args.includes('/harness/invoke.py'),
+  );
+  const mounts = invocations.map((args) =>
+    args.filter((arg) => arg.startsWith('type=volume')),
+  );
+  expect(mounts[0]).toHaveLength(4);
+  expect(mounts[0].every((mount) => mount.endsWith(',readonly'))).toBe(true);
+  expect(mounts[1].filter((mount) => !mount.endsWith(',readonly'))).toEqual([
+    'type=volume,source=runner-data,target=/app/customers.js,volume-nocopy,volume-subpath=projects/project/repairs/attempt/editable/customers.js',
+    'type=volume,source=runner-data,target=/app/customers.test.mjs,volume-nocopy,volume-subpath=projects/project/repairs/attempt/editable/customers.test.mjs',
+  ]);
+  expect(docker.calls.find((args) => args.includes('serve'))).toContain(
+    'type=bind,source=/offline/models,target=/models,readonly',
+  );
+  await agent.test('/managed/projects/project/repairs/attempt/editable');
+  const tests = docker.calls.find((args) => args.includes('--test'))!;
+  expect(tests[tests.indexOf('--network') + 1]).toBe('none');
+  expect(tests.filter((arg) => arg.startsWith('type=volume'))).toHaveLength(2);
+  const callsBefore = docker.calls.length;
+  await expect(agent.test('/managed/../private')).rejects.toMatchObject({
+    code: 'invalid_request',
+  });
+  expect(
+    docker.calls.slice(callsBefore).some((args) => args[0] === 'run'),
+  ).toBe(false);
+});
+
 it('rejects changed model bytes between phases and cleans up after a CPU timeout', async () => {
   const docker = fakeDocker();
   const agent = createAiderSandbox(

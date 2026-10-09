@@ -1,6 +1,36 @@
 # US3 and US4: what to connect
 
-**US3 can run without AI. US4 still needs the qualified harness.** The demo runtime adapter is connected, but its live Docker/database behavior has not passed a laptop run yet.
+**US3 can run without repair AI. US4 connects the existing harness through the demo Compose configuration or direct host runner.** The goal conversation, candidate preview, approval/export, and retained demo-check adapters are connected. Live offline qualification remains pending.
+
+## Run the connected flow
+
+Prepare the images and downloaded model using [the harness setup guide](../harness/README.md), and start local Ollama. Stop any other VibeGuard runner on port 4310. From `vibeguard/`, run:
+
+```sh
+export VIBEGUARD_MODELS_DIRECTORY="/usr/share/ollama/.ollama/models"
+VIBEGUARD_DEMO_RUNTIME=1 \
+VIBEGUARD_REPAIR_ENABLED=1 \
+VIBEGUARD_OLLAMA_URL=http://127.0.0.1:11434 \
+pnpm --filter @vibeguard/runner dev
+```
+
+In another terminal run `pnpm --filter @vibeguard/dashboard dev` and open http://localhost:5173. Keep Demo data off. Import the supplied ZIP, prepare it, describe the lost-edit problem in Set the goal, edit and confirm the proposed goal, then run baseline checks and try repair. The protected goal must say **Saved customer edits survive refreshing.** Open the checked preview for human testing before approving, saving, and rerunning retained checks on the original to catch the bug again.
+
+`VIBEGUARD_GOAL_MODEL` changes the conversation model (default `qwen2.5-coder:7b`). `VIBEGUARD_REPAIR_PROFILE` selects the existing repair settings JSON. CPU repair phases may each take up to 30 minutes. Model errors and unsuccessful attempts do not establish a verified fix.
+
+Goal conversation is enabled on ordinary startup too: direct runners default to `http://127.0.0.1:11434`, and Compose defaults to `http://host.docker.internal:11434`. After updating from an older image, run `docker compose -f compose.yaml -f compose.demo.yaml up --build -d`, refresh the project, and retry your message. If the model cannot be reached, verify Ollama is reachable from the runner and has the selected model. An explicit `VIBEGUARD_OLLAMA_URL` overrides the default.
+
+The demo Compose configuration enables repair and defaults `VIBEGUARD_MODELS_DIRECTORY` to `/usr/share/ollama/.ollama/models`. This is the model-only folder on the Docker host, not inside the runner. Set that variable before starting Compose if your models live elsewhere. The agent receives four individual files from the managed workspace volume, with writable access only to the fix and supplemental test during editing. Originals, protected suites, and approval records are not mounted. Direct host startup continues using individual file bind mounts. OpenRouter repair profiles are explicitly online debug mode; goal conversation has its own provider setting.
+
+Manage AI settings in vibeguard/.env; example.env lists the options. It starts with openrouter for cloud integration testing. Set VIBEGUARD_CLOUD_MODEL and OPENROUTER_API_KEY there. For local repair, choose VIBEGUARD_REPAIR_PROVIDER=ollama, set VIBEGUARD_LOCAL_MODEL to your downloaded Qwen model, and check VIBEGUARD_MODELS_DIRECTORY. Compose and direct runner startup read .env; clear old shell exports because they override file values. Direct host startup needs VIBEGUARD_OLLAMA_URL=http://127.0.0.1:11434; Docker uses http://host.docker.internal:11434. Restart the runner between choices; its startup log reports both AI models. Set VIBEGUARD_GOAL_PROVIDER=openrouter for cloud goal conversation, or ollama for local chat. VIBEGUARD_GOAL_CLOUD_MODEL optionally overrides the shared cloud model. Cloud chat sends conversation messages and the current goal to OpenRouter. See [dashboard cloud repair commands](../harness/OPENROUTER.md#use-cloud-repair-from-the-dashboard).
+
+After updating Step 4, rebuild the backend:
+
+```sh
+docker compose -f compose.yaml -f compose.demo.yaml up --build -d
+```
+
+Refresh the dashboard, prepare the test app again, rerun baseline checks, then click Try repair. Existing imported files and confirmed goals remain in the named volume. The model and Aider images must already be prepared; repair never pulls missing images. Docker must support individual file volume subpaths; actual mounting, inference, and full repair still require laptop verification.
 
 ## Start the demo backend
 
@@ -35,7 +65,7 @@ Checks use the application's customer actions, the real Supabase client, and ind
 
 ## US4: show the recorded change
 
-The other thread owns repair execution. Once it records an attempt, these reads are available:
+Once repair records an attempt, these reads are available:
 
 | Read | Use |
 | --- | --- |
@@ -73,7 +103,7 @@ For a UI walkthrough without the pending adapters:
 3. Open **Catch the bug**, click **Use sample confirmed goal**, then **Run baseline checks**.
 4. Continue to repair. **Try repair** shows the successful sample; **Show unsuccessful sample** shows the two-attempt failure.
 
-These sample actions stay off the runner API and never open synthetic preview URLs. The live UI requires a real confirmed goal; the **Set the goal** frontend is still a placeholder. Imported live projects cannot borrow sample goal IDs.
+These sample actions stay off the runner API and never open synthetic preview URLs. The live Set the goal screen sends conversation jobs, offers editable goals, and confirms the current revision. Imported live projects cannot borrow sample goal IDs.
 
 Frontend API/polling/render tests run with `pnpm check`. The sandbox blocked both the Vite listener and Chrome startup, so desktop/mobile browser interactions and the full Docker-backed journey remain unverified.
 

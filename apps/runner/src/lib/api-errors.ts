@@ -1,3 +1,4 @@
+import { enrichEvent } from './logging.js';
 import type { RequestHandler, ErrorRequestHandler, Response } from 'express';
 import type { ApiError, ErrorCode, ErrorResponse } from '@vibeguard/contracts';
 
@@ -6,6 +7,7 @@ export function sendApiError(
   status: number,
   error: ApiError,
 ) {
+  enrichEvent({ error_code: error.code });
   response.status(status).json({ error } satisfies ErrorResponse);
 }
 
@@ -33,6 +35,10 @@ export const apiErrorHandler: ErrorRequestHandler = (
   response,
   next,
 ) => {
+  enrichEvent({
+    error_code: _error instanceof ApiFailure ? _error.code : 'internal_error',
+    error_type: _error instanceof Error ? _error.name : 'UnknownError',
+  });
   if (response.headersSent) {
     next(_error);
     return;

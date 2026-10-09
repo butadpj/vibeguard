@@ -54,6 +54,14 @@ export async function seedCheckedProject(home: string): Promise<Project> {
   const seeded: Project = {
     ...structuredClone(checkedProjectExample),
     id: seededDemoProjectId,
+    baseline: {
+      ...checkedProjectExample.baseline!,
+      projectId: seededDemoProjectId,
+    },
+    latestVerification: {
+      ...checkedProjectExample.latestVerification!,
+      projectId: seededDemoProjectId,
+    },
     originalVersion: {
       ...checkedProjectExample.originalVersion,
       contentDigest: await directoryDigest(original),

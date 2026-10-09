@@ -11,6 +11,7 @@ import type {
   VerificationResult,
 } from '@vibeguard/contracts';
 import { call, RunnerError, waitForJob } from '../runner';
+import { CheckEvidence, checkExplanation } from './CheckEvidence';
 import './ApprovalPanel.css';
 
 const VERDICT_LABEL: Record<CheckVerdict, string> = {
@@ -38,12 +39,14 @@ function Results({ result }: { result: VerificationResult }) {
                 {VERDICT_LABEL[check.verdict]}
               </span>
             </div>
-            <p className="note">{check.explanation}</p>
+            <p className="note">{checkExplanation(check)}</p>
             <details>
               <summary>See evidence</summary>
               <ul className="approval-evidence">
                 {check.evidence.map((item) => (
-                  <li key={item.id}>{item.summary}</li>
+                  <li key={item.id}>
+                    <CheckEvidence item={item} />
+                  </li>
                 ))}
               </ul>
             </details>
@@ -112,7 +115,9 @@ export function ApprovalPanel({
     project.goal?.status === 'confirmed' &&
     verification !== null &&
     verification.verdict === 'passed' &&
-    verification.versionId === candidate.id;
+    verification.versionId === candidate.id &&
+    verification.goalRevisionId === project.goal.revisionId &&
+    project.activeJobId === null;
   const projectUrl = `/api/projects/${encodeURIComponent(project.id)}`;
 
   async function run(

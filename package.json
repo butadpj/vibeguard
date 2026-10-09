@@ -14,7 +14,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
-    "test": "pnpm --filter @vibeguard/runner test && pnpm --filter @vibeguard/dashboard test && python3 -B harness/test_cloud_proxy.py"
+    "test": "pnpm --filter @vibeguard/runner test && pnpm --filter @vibeguard/dashboard test && python3 -B harness/test_cloud_proxy.py && python3 -B harness/test_local_diagnosis.py"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

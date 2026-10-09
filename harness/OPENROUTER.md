@@ -54,3 +54,21 @@ unset VIBEGUARD_CLOUD_MODEL
 ```
 
 To return to offline Ollama, omit `--openrouter` and set `VIBEGUARD_MODELS_DIRECTORY` as in the trial guide. Offline mode never receives the OpenRouter key.
+
+## Use cloud repair from the dashboard
+
+Keep dashboard AI settings in vibeguard/.env. For a new checkout, copy example.env to .env once; do not overwrite an existing .env. Set VIBEGUARD_REPAIR_PROVIDER=openrouter, VIBEGUARD_CLOUD_MODEL to your selected model ID, and OPENROUTER_API_KEY to your key. The example lists all local and cloud options. Clear older shell exports of these variables because shell values override .env. Rebuild the connected backend:
+
+```sh
+docker compose -f compose.yaml -f compose.demo.yaml up --build -d
+```
+
+Edit VIBEGUARD_CLOUD_MODEL in .env to choose another cloud model. The runner logs its selected repair provider and model at startup. The key goes only to the trusted runner/gateway; Aider still receives a placeholder. Step 2 uses VIBEGUARD_GOAL_PROVIDER=openrouter or ollama independently. Optional VIBEGUARD_GOAL_CLOUD_MODEL overrides the shared cloud model. Cloud chat sends conversation messages and the current goal to OpenRouter, using the same API key.
+
+To switch Step 4 back to local Qwen, set VIBEGUARD_REPAIR_PROVIDER=ollama in .env. VIBEGUARD_LOCAL_MODEL selects the downloaded repair model and VIBEGUARD_MODELS_DIRECTORY points to the host model-only folder. No cloud key is needed in local mode. Restart:
+
+```sh
+docker compose -f compose.yaml -f compose.demo.yaml up -d
+```
+
+Refresh your project, prepare its test app again, then rerun baseline checks before repair. Model/provider changes take effect when the runner restarts, between jobs. Cloud failures never switch providers automatically. Custom repair JSON profiles remain available for direct host startup; their provider must match any explicit provider selection.

@@ -1,4 +1,5 @@
 import express from 'express';
+import { logRequests } from './lib/logging.js';
 import { createProjectsStore } from './features/projects/projects-store.js';
 import type { PrepareEnvironment } from './features/projects/projects-prepare.js';
 import type { GoalConversation } from './features/goals/goals-conversation.js';
@@ -52,6 +53,7 @@ export function createApp(
       service: 'vibeguard-runner',
     } satisfies HealthResponse);
   });
+  app.use('/api', logRequests());
   app.use('/api', protectRequests);
   app.use(
     '/api',

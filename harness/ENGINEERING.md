@@ -90,7 +90,7 @@ Keep preparation and baseline integration with their existing owners. `demo-tria
 
 Repair checks the current goal, original version, baseline identity, and protected suite digest. Approval rejects changed candidate or suite bytes. Job attempts remain available if preview or publication fails. Jobs share the existing in-memory single-job runner.
 
-The default server has no qualified repair adapter and reports `harness_unavailable`. The current runner Compose image also lacks Docker tooling/access. Production execution needs authorized Docker access and host-visible mount paths. Give that access to the runner only; keep the socket out of agent, model, test, and verifier containers.
+The ordinary server leaves repair disabled. The demo Compose configuration enables it and supplies trusted runner Docker access, the host model directory, and the existing workspace volume. The runner image includes the repair principles. Aider and supplemental tests receive individual file subpaths from that volume; diagnosis mounts them read-only, and editing enables writes only for customers.js and customers.test.mjs. Model files remain a read-only host bind mount. Direct host startup keeps individual bind mounts. Keep the socket out of agent, model, test, and verifier containers. Actual volume-file mounting and full repair remain qualification work.
 
 ## Evidence and cleanup
 
@@ -113,3 +113,13 @@ Trial `/tmp/vibeguard-repair-proof-jsobdp` completed its first diagnosis in 378,
 Live isolation, PostgreSQL persistence, model repair quality, CPU runtime/memory, offline operation, and founder QA still need laptop proof. Complete two clean offline rehearsals and record their runtime, peak memory, and human QA outcome before treating the profile as qualified.
 
 References: [Aider options](https://aider.chat/docs/config/options.html), [Aider with Ollama](https://aider.chat/docs/llms/ollama.html), [Ollama API](https://docs.ollama.com/api/generate). Use runtime version checks when documentation differs.
+
+
+## Small local model diagnosis
+
+Rebuild the harness image after changing `invoke.py`: `docker build -t vibeguard-aider:0.86.2 harness`.
+Local diagnosis calls Ollama `/api/chat` directly inside the same protected container, using read-only source and the same six-field schema as cloud diagnosis: cause, evidence, affectedFiles, plan, risks, tests. Evidence and affectedFiles are arrays; the other fields are bounded strings. The model supplies all six fields; the harness does not fabricate missing fields. Cloud diagnosis enforces that schema through the trusted gateway, while edit responses remain in Aider’s edit format. Truncated responses are rejected. Aider still performs edits. CPU placement, model digest, token budgets, and independent checks remain enforced.
+
+A diagnosis format error gets one read-only correction inside the current attempt. If correction fails, stop without spending the second repair attempt on another formatting cycle. Both replies remain in private evidence. No candidate is published without passing protected checks.
+
+Goal chat sends the last 20 stored messages. Its prompt asks one missing fact at a time, uses earlier answers, and proposes a goal once the action and outcome are clear. Ollama retains the goal model for five minutes between turns. Local repair quality and chat behavior still need a laptop trial; mocked tests do not establish model quality.

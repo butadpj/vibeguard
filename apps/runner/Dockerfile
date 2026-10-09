@@ -14,6 +14,7 @@ COPY apps/runner apps/runner
 COPY packages/contracts packages/contracts
 COPY fixtures/demo-crud/customer-tracker fixtures/demo-crud/customer-tracker
 COPY verification/demo-crud verification/demo-crud
+COPY harness/principles.md harness/principles.md
 RUN pnpm --filter @vibeguard/runner build
 RUN mkdir -p /data/vibeguard && chown node:node /data/vibeguard
 USER node

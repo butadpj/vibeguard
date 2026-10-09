@@ -43,3 +43,10 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.repair-diagnosis {
+  overflow-wrap: anywhere;
+}
+.repair-diagnosis p {
+  white-space: pre-wrap;
+}

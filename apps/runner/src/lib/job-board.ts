@@ -1,4 +1,10 @@
 import { randomUUID } from 'node:crypto';
+import {
+  enrichEvent,
+  logContext,
+  writeEvent,
+  type LogSink,
+} from './logging.js';
 import { ReleaseError } from './release-error.js';
 import type {
   GoalRevisionId,
@@ -34,7 +40,7 @@ export interface JobBoard {
 }
 
 /** One active operation in this process; restart loses all job state. */
-export function createJobBoard(): JobBoard {
+export function createJobBoard(sink: LogSink = writeEvent): JobBoard {
   let activeJobId: JobId | null = null;
   const jobs = new Map<JobId, Job>();
   const running = new Map<JobId, Promise<void>>();
@@ -52,6 +58,21 @@ export function createJobBoard(): JobBoard {
           'Wait for the current task to finish and retry.',
         );
       const id = `job_${randomUUID()}`;
+      enrichEvent({
+        job_id: id,
+        project_id: init.projectId,
+        operation: init.operation,
+      });
+      const event = {
+        ...logContext.getStore(),
+        event: 'job',
+        job_id: id,
+        project_id: init.projectId,
+        operation: init.operation,
+        goal_revision_id: init.goalRevisionId,
+        version_id: init.versionId,
+      };
+      const started = performance.now();
       activeJobId = id;
       jobs.set(id, {
         id,
@@ -78,10 +99,13 @@ export function createJobBoard(): JobBoard {
       } as unknown as Job);
       running.set(
         id,
-        (async () => {
+        logContext.run(event, async () => {
           try {
             const result = await work(
-              (progress) => update(id, { progress }),
+              (progress) => {
+                enrichEvent({ job_stage: progress.step });
+                update(id, { progress });
+              },
               (attempt) => {
                 const current = jobs.get(id)!;
                 const attempts = current.repairAttempts.filter(
@@ -101,6 +125,11 @@ export function createJobBoard(): JobBoard {
               progress: { step: 'finished', message: 'Done.' },
             });
           } catch (error) {
+            enrichEvent({
+              error_code:
+                error instanceof ReleaseError ? error.code : 'internal_error',
+              error_type: error instanceof Error ? error.name : 'UnknownError',
+            });
             const known = error as {
               code?: string;
               message?: string;
@@ -120,9 +149,45 @@ export function createJobBoard(): JobBoard {
               },
             });
           } finally {
+            const current = jobs.get(id)!;
+            if (current.status === 'succeeded') {
+              const verification =
+                current.operation === 'check'
+                  ? current.result
+                  : current.operation === 'repair'
+                    ? current.result.verification
+                    : null;
+              if (verification)
+                enrichEvent({
+                  verification_id: verification.id,
+                  check_verdict: verification.verdict,
+                  checks_total: verification.checks.length,
+                  checks_failed: verification.checks.filter(
+                    (check) => check.verdict === 'failed',
+                  ).length,
+                  checks_unavailable: verification.checks.filter(
+                    (check) => check.verdict === 'could_not_check',
+                  ).length,
+                });
+              if (current.operation === 'repair')
+                enrichEvent({
+                  repair_outcome: current.result.outcome,
+                  repair_issue_code:
+                    current.result.attempts.at(-1)?.issue?.code,
+                });
+              if (current.operation === 'prepare')
+                enrichEvent({ setup_status: current.result.setup.status });
+            }
             activeJobId = null;
+            sink({
+              ...event,
+              level: current.status === 'failed' ? 'error' : 'info',
+              outcome: current.status,
+              repair_attempts: current.repairAttempts.length,
+              duration_ms: Math.round(performance.now() - started),
+            });
           }
-        })(),
+        }),
       );
       return id;
     },

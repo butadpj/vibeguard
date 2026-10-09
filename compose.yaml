@@ -9,6 +9,14 @@ services:
     environment:
       VIBEGUARD_HOST: 0.0.0.0
       VIBEGUARD_WORKSPACE: /data/vibeguard
+      VIBEGUARD_OLLAMA_URL: '${VIBEGUARD_OLLAMA_URL:-http://host.docker.internal:11434}'
+      VIBEGUARD_GOAL_PROVIDER: '${VIBEGUARD_GOAL_PROVIDER:-ollama}'
+      VIBEGUARD_GOAL_CLOUD_MODEL: '${VIBEGUARD_GOAL_CLOUD_MODEL:-}'
+      VIBEGUARD_CLOUD_MODEL: '${VIBEGUARD_CLOUD_MODEL:-}'
+      OPENROUTER_API_KEY: '${OPENROUTER_API_KEY:-}'
+      VIBEGUARD_GOAL_MODEL: '${VIBEGUARD_GOAL_MODEL:-qwen2.5-coder:7b}'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     volumes:
       - runner-data:/data/vibeguard
     healthcheck:

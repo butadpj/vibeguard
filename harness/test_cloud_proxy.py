@@ -5,6 +5,7 @@ import unittest
 import urllib.error
 from types import SimpleNamespace
 from cloud_proxy import GatewayHandler, ENDPOINT
+from invoke import DIAGNOSIS_FORMAT
 
 
 class Transport:
@@ -69,6 +70,14 @@ class GatewayTests(unittest.TestCase):
             self.assertEqual(self.call(body={**self.payload, **change})[0], 400)
         self.assertEqual(self.call('/forward')[0], 404)
         self.assertEqual(self.requests, [])
+
+    def test_forwards_only_the_canonical_diagnosis_schema(self):
+        self.assertEqual(self.call(body={**self.payload, 'response_format': {'type': 'json_object'}})[0], 400)
+        self.assertEqual(self.requests, [])
+        self.assertEqual(self.call(body={**self.payload, 'response_format': DIAGNOSIS_FORMAT})[0], 200)
+        sent = json.loads(self.requests[0][0].data)
+        self.assertEqual(sent['response_format'], DIAGNOSIS_FORMAT)
+        self.assertTrue(sent['provider']['require_parameters'])
 
     def test_provider_failure_has_no_secret_and_cannot_trigger_second_inference(self):
         self.fail = True

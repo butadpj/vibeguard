@@ -20,6 +20,7 @@ import { ReleaseError } from '../../lib/release-error.js';
 import type { RepairHarness } from './repairs-run.js';
 import type { PhaseEvidence, RepairAgent } from './repair-trial.js';
 import { createAiderSandbox, defaultAiderProfile } from './aider-sandbox.js';
+import { createRepairHarness } from './repair-harness.js';
 
 const draft = {
   description: 'Customer edits disappear.',
@@ -185,27 +186,29 @@ function fakeAgent(fixOnEdit = 1): RepairAgent {
     },
   };
 }
-function compose(agent?: RepairAgent) {
-  const repairHarness: RepairHarness | undefined = agent
-    ? {
-        agent,
-        principles:
-          'Design code and behavioral regression tests together; fake external seams only.',
-        preview: async (input) => {
-          previewCount++;
-          expect(
-            (await appJourney(input.workingDirectory)).every(
-              (check) => check.verdict === 'passed',
-            ),
-          ).toBe(true);
-          return {
-            versionId: input.versionId,
-            environmentId: 'fake_preview',
-            url: 'http://127.0.0.1:4410',
-          };
-        },
-      }
-    : undefined;
+function compose(agent?: RepairAgent, configuredHarness?: RepairHarness) {
+  const repairHarness: RepairHarness | undefined =
+    configuredHarness ??
+    (agent
+      ? {
+          agent,
+          principles:
+            'Design code and behavioral regression tests together; fake external seams only.',
+          preview: async (input) => {
+            previewCount++;
+            expect(
+              (await appJourney(input.workingDirectory)).every(
+                (check) => check.verdict === 'passed',
+              ),
+            ).toBe(true);
+            return {
+              versionId: input.versionId,
+              environmentId: 'fake_preview',
+              url: 'http://127.0.0.1:4410',
+            };
+          },
+        }
+      : undefined);
   client = createTestClient(
     createApp({
       workspaceDirectory: home,
@@ -407,6 +410,98 @@ it('repairs after one failed candidate, persists checked bytes/evidence, preview
   expect((await post('/approvals', approval)).status).toBe(409);
 });
 
+it.each([false, true])(
+  'runs the production local harness through a repair job with only Docker execution faked (named volume: %s)',
+  async (namedVolume) => {
+    const calls: string[][] = [];
+    const applicationAgent = fakeAgent();
+    const modelDigest = 'a'.repeat(64);
+    const harness = createRepairHarness({
+      workspaceDirectory: namedVolume ? home : undefined,
+      workspaceVolume: namedVolume ? 'test_runner-data' : undefined,
+      modelsDirectory: '/offline/models',
+      principles: 'Design code and behavioral regression tests together.',
+      preview: async (input) => {
+        previewCount++;
+        expect(
+          (await appJourney(input.workingDirectory)).every(
+            (check) => check.verdict === 'passed',
+          ),
+        ).toBe(true);
+        return {
+          versionId: input.versionId,
+          environmentId: 'candidate_preview',
+          url: 'http://127.0.0.1:4410',
+        };
+      },
+      execute: async (_command, args, _timeout, options) => {
+        calls.push(args);
+        let output = args[0] === 'info' ? '4' : 'synthetic Docker output';
+        if (args.includes('/harness/invoke.py')) {
+          const input = JSON.parse(options!.input!);
+          const evidence = await applicationAgent.run(input);
+          output =
+            'VIBEGUARD_RESPONSE=' +
+            JSON.stringify({
+              response: evidence.response,
+              tooling: { modelDigest },
+            });
+        }
+        return { exitCode: 0, durationMs: 5, output };
+      },
+    });
+    compose(undefined, harness);
+    const job = await finish(await post('/repairs', request()));
+    expect(job).toMatchObject({
+      status: 'succeeded',
+      result: { outcome: 'checked', verification: { verdict: 'passed' } },
+    });
+    expect(invocations).toEqual(['diagnosis', 'edit']);
+    expect(previewCount).toBe(1);
+    const current = await snapshot();
+    expect(current.previews.map((preview) => preview.versionId)).toEqual([
+      current.originalVersion.id,
+      current.candidateVersion!.id,
+    ]);
+    expect(calls.filter((args) => args.includes('serve'))).toHaveLength(2);
+    const inference = calls.filter((args) =>
+      args.includes('/harness/invoke.py'),
+    );
+    expect(inference).toHaveLength(2);
+    for (const args of inference) {
+      const mounts = args.filter((arg) =>
+        arg.startsWith(namedVolume ? 'type=volume' : 'type=bind'),
+      );
+      expect(mounts).toHaveLength(4);
+      expect(
+        mounts.every((mount) => mount.includes('/attempt-1/editable/')),
+      ).toBe(true);
+      expect(mounts.some((mount) => mount.includes('check-sets'))).toBe(false);
+      expect(mounts.every((mount) => !mount.includes('/original/'))).toBe(true);
+      if (namedVolume) {
+        expect(
+          mounts.every(
+            (mount) =>
+              mount.includes('source=test_runner-data') &&
+              mount.includes('volume-subpath=projects/'),
+          ),
+        ).toBe(true);
+      }
+      expect(args).toContain('--read-only');
+      expect(args).toContain('never');
+    }
+    const supplemental = calls.find((args) => args.includes('--test'))!;
+    expect(supplemental[supplemental.indexOf('--network') + 1]).toBe('none');
+    const workspace = createFileWorkspace(home);
+    expect(
+      await workspace.versionDigest(project.id, current.originalVersion.id),
+    ).toBe(current.originalVersion.contentDigest);
+    expect(
+      await workspace.versionDigest(project.id, current.candidateVersion!.id),
+    ).toBe(current.candidateVersion!.contentDigest);
+  },
+);
+
 it('reports exhausted attempts without a preview or approvable candidate', async () => {
   compose(fakeAgent(99));
   const job = await finish(await post('/repairs', request()));
@@ -465,7 +560,9 @@ it.each([
     });
     const job = await finish(await post('/repairs', request()));
     expect(job.result.outcome).toBe('no_verified_fix');
-    expect(job.repairAttempts).toHaveLength(2);
+    expect(job.repairAttempts).toHaveLength(
+      failure === 'malformed-diagnosis' ? 1 : 2,
+    );
     expect(
       job.repairAttempts.every((attempt: { issue: unknown }) => attempt.issue),
     ).toBe(true);
@@ -623,4 +720,31 @@ it('keeps the runner single-job while diagnosis is in progress', async () => {
     await jobs.whenDone(jobId);
   }
   expect(jobs.get(jobId)?.status).toBe('succeeded');
+});
+
+it('corrects diagnosis formatting and still permits two actual repair attempts', async () => {
+  const agent = fakeAgent(2);
+  let malformed = true;
+  compose({
+    ...agent,
+    async run(input) {
+      if (malformed) {
+        malformed = false;
+        invocations.push(input.phase);
+        return phase('Unstructured diagnosis');
+      }
+      return agent.run(input);
+    },
+  });
+  const job = await finish(await post('/repairs', request()));
+  expect(job.result.outcome).toBe('checked');
+  expect(job.repairAttempts).toHaveLength(2);
+  expect(invocations).toEqual([
+    'diagnosis',
+    'diagnosis',
+    'edit',
+    'diagnosis',
+    'edit',
+  ]);
+  expect(previewCount).toBe(1);
 });

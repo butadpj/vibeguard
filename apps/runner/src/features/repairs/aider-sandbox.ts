@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { join, isAbsolute } from 'node:path';
+import { join, isAbsolute, relative } from 'node:path';
+import { isInside, isSafeId } from '../../lib/confined-path.js';
 import { runProcess } from './repair-process.js';
 import type { PhaseEvidence, RepairAgent } from './repair-trial.js';
 import { editScope } from './repair-trial.js';
@@ -101,8 +102,18 @@ export function createAiderSandbox(
   modelsDirectory: string | null,
   execute: typeof runProcess = runProcess,
   cloudApiKey?: string,
+  storage?: { workspaceDirectory: string; workspaceVolume: string },
 ): RepairAgent {
   validateProfile(profile);
+  if (
+    storage &&
+    (!isAbsolute(storage.workspaceDirectory) ||
+      !isSafeId(storage.workspaceVolume))
+  )
+    throw new ReleaseError(
+      'invalid_request',
+      'Invalid repair workspace volume configuration.',
+    );
   const cloud = profile.provider === 'openrouter';
   if (cloud && !cloudApiKey?.trim())
     throw new ReleaseError(
@@ -167,12 +178,31 @@ export function createAiderSandbox(
       'HOME=/tmp',
     ];
   };
-  const mount = (source: string, destination: string, readonly: boolean) => {
+  const mount = (
+    source: string,
+    destination: string,
+    readonly: boolean,
+    workspaceFile = false,
+  ) => {
     if (!isAbsolute(source) || /[,\n]/.test(source))
       throw new ReleaseError(
         'invalid_request',
         'Sandbox mount paths must be absolute.',
       );
+    if (storage && workspaceFile) {
+      if (
+        !isInside(storage.workspaceDirectory, source) ||
+        source === storage.workspaceDirectory
+      )
+        throw new ReleaseError(
+          'invalid_request',
+          'Repair files must stay inside the managed workspace volume.',
+        );
+      return [
+        '--mount',
+        `type=volume,source=${storage.workspaceVolume},target=${destination},volume-nocopy,volume-subpath=${relative(storage.workspaceDirectory, source)}${readonly ? ',readonly' : ''}`,
+      ];
+    }
     return [
       '--mount',
       `type=bind,source=${source},target=${destination}${readonly ? ',readonly' : ''}`,
@@ -354,6 +384,7 @@ export function createAiderSandbox(
                 input.phase === 'edit' &&
                 editScope.includes(file as (typeof editScope)[number])
               ),
+              true,
             ),
           );
         args.push(profile.aiderImage, 'python', '/harness/invoke.py');
@@ -452,7 +483,7 @@ export function createAiderSandbox(
       const name = `vg-tests-${randomUUID()}`;
       try {
         const mounts = editScope.flatMap((file) =>
-          mount(join(targetDirectory, file), `/app/${file}`, true),
+          mount(join(targetDirectory, file), `/app/${file}`, true, true),
         );
         const result = await docker(
           [

@@ -17,6 +17,7 @@ import {
   getRepairEvidence,
 } from '../checkRepairClient';
 import { call } from '../runner';
+import { CheckEvidence, checkExplanation } from './CheckEvidence';
 import './CheckRepairPanel.css';
 
 const labels = {
@@ -58,20 +59,14 @@ export function CheckReport({
               <h3>{check.name}</h3>
               <strong>{labels[check.verdict]}</strong>
             </div>
-            <p>{check.explanation}</p>
+            <p>{checkExplanation(check)}</p>
             <details className="details">
               <summary>Evidence and timings</summary>
               {check.evidence.length ? (
                 <ul>
                   {check.evidence.map((item) => (
                     <li key={item.id}>
-                      {item.summary}
-                      {item.durationMs !== null && (
-                        <span className="note">
-                          {' '}
-                          · {item.durationMs.toLocaleString()} ms
-                        </span>
-                      )}
+                      <CheckEvidence item={item} />
                     </li>
                   ))}
                 </ul>
@@ -83,6 +78,23 @@ export function CheckReport({
         ))}
       </ul>
     </section>
+  );
+}
+
+export function RepairSummary({ summary }: { summary?: string }) {
+  return (
+    <>
+      <p role="status">
+        <strong>The candidate passed the required checks.</strong> Try the fixed
+        test app to confirm it behaves as expected before approving it.
+      </p>
+      {summary && (
+        <details className="details repair-diagnosis">
+          <summary>Technical diagnosis and repair plan</summary>
+          <p className="note">{summary}</p>
+        </details>
+      )}
+    </>
   );
 }
 
@@ -296,10 +308,10 @@ export function CheckRepairPanel({
               'The repair did not produce a checked candidate for testing.'}
           </p>
         )}
-        {repair?.outcome === 'checked' && (
-          <p role="status">
-            {repair.summary} Test the candidate before approving it.
-          </p>
+        {operation === 'repair' && !noFix && verified?.verdict === 'passed' && (
+          <RepairSummary
+            summary={repair?.outcome === 'checked' ? repair.summary : undefined}
+          />
         )}
         <div className="actions">
           {!demo && (
@@ -454,11 +466,10 @@ export function CheckRepairPanel({
                   <summary>
                     {check.name}: {labels[check.verdict]}
                   </summary>
-                  <p>{check.explanation}</p>
+                  <p>{checkExplanation(check)}</p>
                   {check.evidence.map((item) => (
                     <p className="note" key={item.id}>
-                      {item.summary}
-                      {item.durationMs !== null && ` · ${item.durationMs} ms`}
+                      <CheckEvidence item={item} />
                     </p>
                   ))}
                 </details>

@@ -335,6 +335,40 @@ it('prepares from cached images without pulling and cleans the previous preview 
     await s.runtime.close();
   }
 });
+it('keeps checked candidate previews separate from the original and cleans replaced candidates', async () => {
+  const s = await scenario(false);
+  s.cached();
+  try {
+    await s.done(await s.post('/prepare'));
+    const workingDirectory = (await createFileWorkspace(
+      s.home,
+    ).versionDirectory(s.project.id, s.project.originalVersion.id))!;
+    const preview = await s.runtime.candidatePreview({
+      projectId: s.project.id,
+      versionId: 'candidate_one',
+      workingDirectory,
+      report: () => {},
+    });
+    expect(preview).toMatchObject({
+      versionId: 'candidate_one',
+      url: 'http://127.0.0.1:4402',
+    });
+    expect(await readdir(join(s.home, 'demo-runtime'))).toHaveLength(2);
+    const next = await s.runtime.candidatePreview({
+      projectId: s.project.id,
+      versionId: 'candidate_two',
+      workingDirectory,
+      report: () => {},
+    });
+    expect(next.environmentId).not.toBe(preview.environmentId);
+    expect(s.calls.filter((args) => args.includes('down'))).toHaveLength(1);
+    expect(await readdir(join(s.home, 'demo-runtime'))).toHaveLength(2);
+    expect(s.calls.filter((args) => args[0] === 'pull')).toEqual([]);
+  } finally {
+    await s.runtime.close();
+  }
+  expect(await readdir(join(s.home, 'demo-runtime'))).toEqual([]);
+});
 it('cleans recorded environments on a new runner instance and retains imported files while invalidating old previews', async () => {
   const s = await scenario();
   await s.done(await s.post('/prepare'));

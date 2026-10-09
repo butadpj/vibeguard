@@ -64,3 +64,5 @@ After setup, disconnect Wi-Fi and restart VibeGuard. Complete all five stories w
 Arbitrary app setups, fresh offline setup with missing dependencies, cloud AI or sandboxes in the investigation loop, required voice or GitHub, replacing complex platform services, live-data changes, and publishing. One passing goal does not prove the whole app is safe.
 
 Related: [System design](?tab=t.wbol5ygqvuyh) · [Product overview](?tab=t.0) · [Product notes](?tab=t.2wtpct2e2qaq).
+
+Development exception: opt-in cloud goal conversation and repair are available for integration testing. These modes require internet and paid credits; the offline success criteria still require Ollama.

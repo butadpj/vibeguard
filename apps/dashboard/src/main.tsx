@@ -5,6 +5,7 @@ import '@vibeguard/design-tokens/tokens.css';
 import './styles.css';
 import { ApprovalPanel } from './components/ApprovalPanel';
 import { CheckRepairPanel } from './components/CheckRepairPanel';
+import { GoalPanel } from './components/GoalPanel';
 import { DemoProject } from './components/DemoProject';
 import { OpenProject, setupLabel } from './components/OpenProject';
 import { StepRail, type RailStep } from './components/StepRail';
@@ -66,7 +67,7 @@ const STEPS: {
     label: 'Try the fix',
     title: 'Fix it, then prove it',
     intro:
-      'The local AI edits a copy, at most twice. The same protected checks then run on a fresh copy.',
+      'AI edits a copy, at most twice. The same protected checks then run on a fresh copy.',
     upcoming: [
       'See the change and the before/after results.',
       'Try the fixed test app yourself.',
@@ -241,6 +242,7 @@ function App() {
         <button
           type="button"
           className="pill switch"
+          style={{ display: 'none' }} // Temporary for dashboard screenshots; remove to restore the toggle.
           aria-pressed={demo}
           onClick={toggleDemo}
         >
@@ -302,38 +304,20 @@ function App() {
                   onContinue={() => go(index + 1)}
                 />
               )}
-              {index === 1 && item.upcoming && (
-                <section className="panel" aria-label="Coming soon">
-                  <div className="panel-head">
-                    <h2>What you’ll do here</h2>
-                    <span className="badge" data-tone="neutral">
-                      Coming soon
-                    </span>
-                  </div>
-                  <ul className="checklist">
-                    {item.upcoming.map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
-                  <p className="note">
-                    This step isn’t connected to the runner yet.
-                  </p>
-                  <div className="actions">
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() => go(index - 1)}
-                    >
-                      Back
-                    </button>
-                  </div>
-                </section>
+              {index === 1 && project && (
+                <GoalPanel
+                  key={`${demo}:${project.id}`}
+                  project={project}
+                  demo={demo}
+                  onProject={onProject}
+                  onContinue={() => go(2)}
+                />
               )}
               {index === 4 &&
                 (live ? (
                   <div className="panel">
                     <ApprovalPanel
-                      key={`${live.id}:${live.candidateVersion?.id ?? ''}`}
+                      key={`${live.id}:${live.candidateVersion?.id ?? ''}:${live.goal?.revisionId ?? ''}`}
                       project={live}
                       onApproved={(approval) =>
                         setProject(

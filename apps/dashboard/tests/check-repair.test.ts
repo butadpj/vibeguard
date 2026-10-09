@@ -18,7 +18,11 @@ import {
   getRepairEvidence,
   getRepairDiff,
 } from '../src/checkRepairClient';
-import { CheckRepairPanel } from '../src/components/CheckRepairPanel';
+import {
+  RepairSummary,
+  CheckReport,
+  CheckRepairPanel,
+} from '../src/components/CheckRepairPanel';
 
 const clone = <T>(value: T): T => structuredClone(value);
 afterEach(() => {
@@ -62,6 +66,86 @@ function screen(project: Project, operation: 'check' | 'repair', demo = false) {
 }
 
 describe('dashboard baseline and repair journeys', () => {
+  it.each(['update', 'goal'] as const)(
+    'keeps generated customer values out of the %s headline while retaining the evidence',
+    (scope) => {
+      const result = clone(baselineFailedProjectExample.baseline);
+      const name = 'Integration 72806761-0417-41fd-ba2c-b4c2a9577a4b';
+      const explanation = `Edit acknowledged "${name} edited"; refreshing PostgreSQL returned "${name}".`;
+      result.checks = [
+        {
+          ...result.checks[0],
+          scope,
+          verdict: 'failed',
+          explanation,
+          evidence: [
+            {
+              id: 'saved_state',
+              kind: 'observation',
+              summary: explanation,
+              artifactId: null,
+              durationMs: null,
+            },
+          ],
+        },
+      ];
+      const html = renderToStaticMarkup(
+        createElement(CheckReport, { result, title: 'Before: original copy' }),
+      );
+      expect(html).toContain(
+        '<p>The app reported the edit as saved, but the saved customer details did not match after refresh.</p>',
+      );
+      expect(html).toContain(
+        `class="check-evidence-text">Edit acknowledged &quot;${name} edited&quot;`,
+      );
+      expect(html).not.toContain('<p>Edit acknowledged');
+    },
+  );
+  it('keeps assertion details in evidence and prints each timing once', () => {
+    const result = clone(baselineFailedProjectExample.baseline);
+    const explanation =
+      'Saved edits disappeared after refresh.\n+ actual - expected\n\n+ old name\n- edited name';
+    result.checks = [
+      {
+        ...result.checks[0],
+        verdict: 'failed',
+        explanation,
+        evidence: [
+          {
+            id: 'failure',
+            kind: 'observation',
+            summary: explanation,
+            artifactId: null,
+            durationMs: null,
+          },
+          {
+            id: 'elapsed',
+            kind: 'timing',
+            summary: '25 ms',
+            artifactId: null,
+            durationMs: 25,
+          },
+          {
+            id: 'measured',
+            kind: 'timing',
+            summary: 'Database read duration',
+            artifactId: null,
+            durationMs: 13,
+          },
+        ],
+      },
+    ];
+    const html = renderToStaticMarkup(
+      createElement(CheckReport, { result, title: 'Before: original copy' }),
+    );
+    expect(html).toContain('<p>Saved edits disappeared after refresh.</p>');
+    expect(html.split('+ actual - expected')).toHaveLength(2);
+    expect(html).toContain('class="check-evidence-text"');
+    expect(html).toContain('+ old name\n- edited name');
+    expect(html.split('25 ms')).toHaveLength(2);
+    expect(html).toContain('Database read duration');
+    expect(html).toContain('13 ms');
+  });
   it('starts original checks, polls progress, refreshes saved baseline, and renders failures with evidence and timings', async () => {
     vi.useFakeTimers();
     const ready: Project = {
@@ -313,4 +397,24 @@ describe('dashboard baseline and repair journeys', () => {
     }
     expect(net.fetcher).not.toHaveBeenCalled();
   });
+});
+
+it('keeps technical repair output behind an expandable section with a clear founder status', () => {
+  const technical =
+    'createCustomerStore.update never writes to PostgreSQL.\nUpdate customers.js.';
+  const html = renderToStaticMarkup(
+    createElement(RepairSummary, { summary: technical }),
+  );
+  expect(html).toContain('The candidate passed the required checks.');
+  expect(html).toContain('before approving it.');
+  const status = html.match(/<p role="status">([\s\S]*?)<\/p>/)![1];
+  expect(status).not.toContain('createCustomerStore');
+  expect(html).toMatch(
+    /<details class="details repair-diagnosis"><summary>Technical diagnosis and repair plan<\/summary>/,
+  );
+  expect(html).toContain(technical);
+  expect(html).not.toContain('<details open');
+  expect(screen(clone(checkedProjectExample), 'repair')).toContain(
+    'The candidate passed the required checks.',
+  );
 });

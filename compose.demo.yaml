@@ -3,7 +3,13 @@ services:
   runner:
     user: '0:0'
     environment:
-      VIBEGUARD_DEMO_RUNTIME: '1'
+      VIBEGUARD_DEMO_RUNTIME: '${VIBEGUARD_DEMO_RUNTIME:-1}'
+      VIBEGUARD_REPAIR_ENABLED: '${VIBEGUARD_REPAIR_ENABLED:-1}'
+      VIBEGUARD_REPAIR_PROVIDER: '${VIBEGUARD_REPAIR_PROVIDER:-ollama}'
+      VIBEGUARD_LOCAL_MODEL: '${VIBEGUARD_LOCAL_MODEL:-qwen2.5-coder:7b}'
+      VIBEGUARD_CLOUD_MODEL: '${VIBEGUARD_CLOUD_MODEL:-}'
+      OPENROUTER_API_KEY: '${OPENROUTER_API_KEY:-}'
+      VIBEGUARD_MODELS_DIRECTORY: '${VIBEGUARD_MODELS_DIRECTORY:-/usr/share/ollama/.ollama/models}'
       VIBEGUARD_WORKSPACE_VOLUME: '${COMPOSE_PROJECT_NAME:-vibeguard}_runner-data'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

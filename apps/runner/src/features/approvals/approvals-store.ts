@@ -1,4 +1,11 @@
-import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import path from 'node:path';
 import type {
   Approval,
@@ -9,7 +16,7 @@ import type {
   VersionId,
 } from '@vibeguard/contracts';
 import { isSafeId, resolveInside } from '../../lib/confined-path.js';
-import { copyTree } from '../../lib/directory-digest.js';
+import { copyTree, directoryDigest } from '../../lib/directory-digest.js';
 import { ReleaseError } from '../../lib/release-error.js';
 
 /** Runner-private record behind an Approval. Not an API payload.
@@ -72,8 +79,22 @@ export function createApprovalStore(home: string) {
   return {
     async save(record: ApprovalRecord, checkSetDirectory: string) {
       const target = folder(record.approval.projectId, record.approval.id);
-      await copyTree(checkSetDirectory, path.join(target, 'checks'));
-      await writeJson(path.join(target, 'approval.json'), record);
+      try {
+        await copyTree(checkSetDirectory, path.join(target, 'checks'));
+        if (
+          record.verification.checkSetDigest &&
+          (await directoryDigest(path.join(target, 'checks'), true)) !==
+            record.verification.checkSetDigest
+        )
+          throw new ReleaseError(
+            'version_mismatch',
+            'The protected checks changed while saving approval.',
+          );
+        await writeJson(path.join(target, 'approval.json'), record);
+      } catch (error) {
+        await rm(target, { recursive: true, force: true });
+        throw error;
+      }
     },
     find(projectId: ProjectId, approvalId: string) {
       return readJson<ApprovalRecord>(

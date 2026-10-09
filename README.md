@@ -14,6 +14,7 @@ Open a terminal in the `vibeguard` repo folder and run:
 
 ```sh
 pnpm install
+cp -n example.env .env
 docker compose up --build
 ```
 
@@ -33,7 +34,7 @@ Without Docker, run `pnpm --filter @vibeguard/runner seed:demo` instead. The dem
 
 Install Docker with Compose before starting the backend. Keep both terminals open while you work; press **Ctrl+C** to stop. Run `docker compose up --build` again after changing backend code. Docker keeps workspace files in a named volume.
 
-Catch the bug and Try the fix now call the runner, follow job progress, and display saved checks, evidence, and code changes. A checked candidate with a matching preview can be opened for human testing. The complete live flow still requires the local conversation adapter, qualified repair harness, candidate preview adapter, and laptop runtime verification. See the [US3/US4 handoff](context/us3-us4-backend-handoff.md).
+Set the goal, Catch the bug, and Try the fix call the runner, follow job progress, and display goals, checks, evidence, and code changes. A checked candidate with a matching preview can be opened for human testing, approved, exported, and rechecked. Manage AI settings in .env; example.env documents cloud and local Qwen for both goal conversation and repair. The demo Compose configuration reads those settings, and both modes use individual workspace-volume file mounts. See the [US3/US4 handoff](context/us3-us4-backend-handoff.md) for setup and direct-host alternatives. Live offline qualification remains pending.
 
 ## Pick an area
 
@@ -67,3 +68,15 @@ Open this repo in your coding tool. Start with:
 Read [PRODUCT.md](PRODUCT.md) for what we're building and [the requirements](context/scope-and-tech-requirements.md) for the demo scope. For UI work, follow [DESIGN.md](DESIGN.md), use the shared tokens, and use Impeccable if you have it installed.
 
 See [architecture](context/architecture.md) for how the pieces fit together.
+
+## See why a request failed
+
+After rebuilding the runner, follow its JSON events:
+
+```sh
+docker compose -f compose.yaml -f compose.demo.yaml logs --follow runner
+```
+
+Find the failed `event: "job"` line. It includes `operation`, `job_id`, `request_id`, stage, duration, and error code. Goal jobs also include model/provider, HTTP status, token counts, and network error code when available. Repair jobs include phase, exit code, and attempt count. The matching `event: "request"` line shows HTTP status; a 202 means work started, so check the job outcome too. `X-Request-Id` is returned on API responses. Health probes are excluded.
+
+Logs go to stdout; Compose retains them with the container. Request bodies, headers, conversation/model text, raw errors, and API keys are excluded. There is no external log service or persistent log database.

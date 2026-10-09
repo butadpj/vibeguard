@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import os from 'node:os';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import path from 'node:path';
 import type {
   CheckResult,
@@ -9,7 +8,9 @@ import type {
   VerificationResult,
 } from '@vibeguard/contracts';
 import { isSafeId } from '../../lib/confined-path.js';
-import { copyDirectory } from '../../lib/directory-digest.js';
+import { directoryDigest } from '../../lib/directory-digest.js';
+import { copyEditableDirectory } from '../../lib/editable-copy.js';
+import { validateChecks, type BaselineChecks } from './checks-baseline.js';
 import { ReleaseError } from '../../lib/release-error.js';
 import type { ReleaseWorkspace } from '../../lib/release-workspace.js';
 import type { ApprovalStore } from '../approvals/approvals-store.js';
@@ -17,12 +18,14 @@ import {
   loadCheckDefinitions,
   runCommandCheck,
   type CheckExecutor,
+  type CheckDefinition,
 } from './check-executor.js';
 
 export interface RecheckDeps {
   workspace: ReleaseWorkspace;
   store: ApprovalStore;
   executor?: CheckExecutor;
+  baselineChecks?: BaselineChecks;
 }
 
 export function parseRecheckRequest(body: unknown): RecheckRequest {
@@ -91,15 +94,36 @@ export async function runRecheck(
     projectId,
     request.approvalId,
   );
-  let definitions;
-  try {
-    definitions = await loadCheckDefinitions(checksDirectory);
-  } catch {
+  const checksDigest = await directoryDigest(checksDirectory, true);
+  if (
+    record.verification.checkSetDigest &&
+    record.verification.checkSetDigest !== checksDigest
+  )
+    throw new ReleaseError(
+      'version_mismatch',
+      'The retained checks changed after approval.',
+    );
+  const suite =
+    deps.baselineChecks?.checkSetId === record.checkSetId
+      ? deps.baselineChecks
+      : undefined;
+  if (record.verification.checkSetDigest && !suite)
     throw new ReleaseError(
       'check_unavailable',
-      'The saved checks could not be read.',
-      'Approve the fix again to save its checks.',
+      'The saved integration verifier is not configured.',
+      'Start the runner with the demo runtime enabled.',
     );
+  let definitions: CheckDefinition[] = [];
+  if (!suite) {
+    try {
+      definitions = await loadCheckDefinitions(checksDirectory);
+    } catch {
+      throw new ReleaseError(
+        'check_unavailable',
+        'The saved checks could not be read.',
+        'Approve the fix again to save its checks.',
+      );
+    }
   }
   const execute = deps.executor ?? runCommandCheck;
   const passedAtApproval = new Set(
@@ -108,11 +132,40 @@ export async function runRecheck(
       .map((check) => check.id),
   );
 
-  const scratch = await mkdtemp(path.join(os.tmpdir(), 'vibeguard-recheck-'));
+  const runs = path.join(
+    path.dirname(path.dirname(path.dirname(checksDirectory))),
+    'recheck-runs',
+  );
+  await mkdir(runs, { recursive: true, mode: 0o700 });
+  const scratch = await mkdtemp(path.join(runs, 'run-'));
+  const versionDigest = await directoryDigest(versionDirectory);
   const freshCopy = path.join(scratch, 'app');
   const checks: CheckResult[] = [];
   try {
-    await copyDirectory(versionDirectory, freshCopy);
+    await copyEditableDirectory(versionDirectory, freshCopy);
+    if (suite) {
+      checks.push(
+        ...validateChecks(
+          await suite.run({
+            projectId,
+            versionId: request.versionId,
+            goal: record.goal,
+            targetDirectory: freshCopy,
+            checksDirectory,
+            report: () => {},
+          }),
+        ),
+      );
+      if (
+        ['goal', 'create', 'read', 'update', 'delete'].some(
+          (scope) => !checks.some((check) => check.scope === scope),
+        )
+      )
+        throw new ReleaseError(
+          'check_unavailable',
+          'The saved verifier omitted required application checks.',
+        );
+    }
     for (const definition of definitions) {
       const outcome = await execute(definition, {
         checksDirectory,
@@ -135,12 +188,27 @@ export async function runRecheck(
     await rm(scratch, { recursive: true, force: true });
   }
 
+  if (
+    (await directoryDigest(checksDirectory, true)) !== checksDigest ||
+    (await directoryDigest(versionDirectory)) !== versionDigest
+  )
+    throw new ReleaseError(
+      'version_mismatch',
+      'The version or retained checks changed during verification.',
+    );
+  for (const check of checks) {
+    if (check.verdict === 'failed' && passedAtApproval.has(check.id))
+      check.explanation =
+        'This passed when you approved the fix and fails now. The problem came back.';
+  }
+
   const verification: VerificationResult = {
     id: `verification_${randomUUID().slice(0, 8)}`,
     projectId,
     versionId: request.versionId,
     goalRevisionId: record.goal.revisionId,
     checkSetId: record.checkSetId,
+    checkSetDigest: checksDigest,
     verdict: overall(checks),
     checks,
   };

@@ -1,4 +1,5 @@
 """Trusted, single-request OpenRouter gateway. No agent files or Docker socket."""
+from invoke import DIAGNOSIS_FORMAT
 import json
 import os
 import urllib.error
@@ -47,6 +48,9 @@ class GatewayHandler(BaseHTTPRequestHandler):
         except (ValueError, TypeError):
             self.reply(400, {'error': 'Invalid or out-of-budget completion request.'})
             return
+        if 'response_format' in body and body['response_format'] != DIAGNOSIS_FORMAT:
+            self.reply(400, {'error': 'Unsupported diagnosis response schema.'})
+            return
         if self.server.used:
             self.reply(409, {'error': 'Only one inference request is allowed per phase.'})
             return
@@ -57,6 +61,9 @@ class GatewayHandler(BaseHTTPRequestHandler):
                    'reasoning': {'effort': 'low', 'exclude': True},
                    'usage': {'include': True},
                    'provider': {'allow_fallbacks': False}}
+        if 'response_format' in body:
+            payload['response_format'] = DIAGNOSIS_FORMAT
+            payload['provider']['require_parameters'] = True
         request = urllib.request.Request(ENDPOINT, data=json.dumps(payload).encode(), headers={
             'Authorization': 'Bearer ' + self.server.api_key,
             'Content-Type': 'application/json',

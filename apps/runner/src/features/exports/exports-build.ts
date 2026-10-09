@@ -79,6 +79,17 @@ export async function prepareExport(
       'Run the checks and approve the fix again.',
     );
   }
+  if (
+    record.verification.checkSetDigest &&
+    (await directoryDigest(
+      deps.store.checksDirectory(projectId, request.approvalId),
+      true,
+    )) !== record.verification.checkSetDigest
+  )
+    throw new ReleaseError(
+      'version_mismatch',
+      'The retained checks changed after approval.',
+    );
   return { record, versionDirectory };
 }
 
@@ -98,11 +109,18 @@ async function runInstructions(
     const text = await readFile(path.join(appDirectory, compose), 'utf8');
     port = text.match(/["']?(\d{2,5}):\d{2,5}["']?/)?.[1] ?? null;
   }
+  const demo = record.checkSetId === 'customer_crud_v1';
+  if (demo) port = '4400';
+  const projectName = `vibeguard-${record.approval.id.replaceAll('_', '-')}`;
   const start = compose
     ? [
         '1. Install Docker Desktop and start it.',
-        '2. Open a terminal in the `app` folder.',
-        `3. Run \`docker compose -f ${compose} up --build\`.`,
+        demo
+          ? '2. Open a terminal in this saved folder.'
+          : '2. Open a terminal in the `app` folder.',
+        demo
+          ? `3. Run \`docker compose -p ${projectName} -f app/${compose} -f service-setup.json up --build\`.`
+          : `3. Run \`docker compose -f ${compose} up --build\`.`,
         port
           ? `4. Open http://localhost:${port} in your browser.`
           : '4. Open the address the terminal shows.',
@@ -131,6 +149,13 @@ async function runInstructions(
     '',
     '## Check it again later',
     'Open VibeGuard and run the saved checks on any later version of this app.',
+    ...(demo
+      ? [
+          '',
+          `The app uses a separate local database volume. Stop it with \`docker compose -p ${projectName} -f app/compose.yaml -f service-setup.json down\`.`,
+          'After initial image downloads, start it offline by adding `--pull never` to the start command.',
+        ]
+      : []),
     '',
   ].join('\n');
 }
@@ -151,6 +176,40 @@ async function buildBundle(
       'internal_error',
       'The saved copy does not match the checked code.',
       'Try saving again.',
+    );
+  }
+  if (
+    record.verification.checkSetDigest &&
+    (await directoryDigest(path.join(destination, 'checks'), true)) !==
+      record.verification.checkSetDigest
+  )
+    throw new ReleaseError(
+      'version_mismatch',
+      'The saved checks do not match the verified suite.',
+    );
+  if (record.checkSetId === 'customer_crud_v1') {
+    // Keep checked app bytes intact; portable service settings live beside them.
+    await writeFile(
+      path.join(destination, 'service-setup.json'),
+      JSON.stringify(
+        {
+          services: {
+            rest: { environment: { PGRST_ADMIN_SERVER_HOST: '127.0.0.1' } },
+            web: {
+              user: '0:0',
+              entrypoint: [
+                'nginx',
+                '-c',
+                '/usr/share/nginx/html/nginx.conf',
+                '-g',
+                'user root; master_process off; daemon off;',
+              ],
+            },
+          },
+        },
+        null,
+        2,
+      ),
     );
   }
   await writeFile(

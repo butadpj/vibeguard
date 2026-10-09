@@ -5,9 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
 import type { CheckResult } from '@vibeguard/contracts';
 import { directoryDigest } from '../../lib/directory-digest.js';
-import { runRepairTrial } from './repair-trial.js';
+import { parseDiagnosis, runRepairTrial } from './repair-trial.js';
 
-it('reports a rejected diagnosis and elapsed time before retrying, while preserving its evidence and source', async () => {
+it('allows one diagnosis format correction without spending the second repair attempt, preserving evidence and source', async () => {
   const trialDirectory = await mkdtemp(join(tmpdir(), 'vg-retry-progress-'));
   const sourceDirectory = fileURLToPath(
     new URL(
@@ -97,7 +97,7 @@ it('reports a rejected diagnosis and elapsed time before retrying, while preserv
       report: (progress) => messages.push(progress.message),
     });
     expect(result.directory).toBeNull();
-    expect(result.attempts).toHaveLength(2);
+    expect(result.attempts).toHaveLength(1);
     const failureIndex = messages.findIndex((message) =>
       /^Attempt 1 failed after \d+m \d+s: Diagnosis format invalid:/.test(
         message,
@@ -107,9 +107,10 @@ it('reports a rejected diagnosis and elapsed time before retrying, while preserv
       message.startsWith('Attempt 2: diagnosing'),
     );
     expect(failureIndex).toBeGreaterThan(-1);
-    expect(failureIndex).toBeLessThan(retryIndex);
-    expect(prompts[1]).toContain('Diagnosis format invalid');
-    for (const number of [1, 2]) {
+    expect(retryIndex).toBe(-1);
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain('previous answer had invalid field types');
+    for (const number of [1]) {
       const evidence = JSON.parse(
         await readFile(
           join(trialDirectory, `attempt-${number}`, 'evidence.json'),
@@ -125,5 +126,26 @@ it('reports a rejected diagnosis and elapsed time before retrying, while preserv
     expect(await directoryDigest(sourceDirectory, true)).toBe(sourceDigest);
   } finally {
     await rm(trialDirectory, { recursive: true, force: true });
+  }
+});
+
+it('enforces a bounded diagnosis contract regardless of model prose or extra fields', () => {
+  const valid = {
+    cause: 'Lost edits',
+    evidence: ['customers.js'],
+    affectedFiles: ['customers.js'],
+    plan: 'Persist changes',
+    risks: 'Database errors',
+    tests: 'Edit then refresh',
+  };
+  expect(parseDiagnosis(JSON.stringify(valid))).toEqual(valid);
+  for (const invalid of [
+    { ...valid, extra: 'unexpected' },
+    { ...valid, evidence: 'source' },
+    { ...valid, plan: 'x'.repeat(6001) },
+    { ...valid, affectedFiles: ['app.js'] },
+    { ...valid, risks: null },
+  ]) {
+    expect(() => parseDiagnosis(JSON.stringify(invalid))).toThrow();
   }
 });

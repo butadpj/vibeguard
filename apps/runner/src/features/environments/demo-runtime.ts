@@ -21,6 +21,7 @@ import {
 } from '../checks/checks-baseline.js';
 import type { PrepareEnvironment } from '../projects/projects-prepare.js';
 import { createProjectsStore } from '../projects/projects-store.js';
+import type { RepairHarness } from '../repairs/repairs-run.js';
 
 const repository = fileURLToPath(new URL('../../../../..', import.meta.url));
 const checkSetId = 'customer_crud_v1';
@@ -486,6 +487,27 @@ export function createDemoRuntime(options: {
     }
   }
   const previews = new Map<string, Awaited<ReturnType<typeof start>>>();
+  const candidates = new Map<string, Awaited<ReturnType<typeof start>>>();
+  const candidatePreview: RepairHarness['preview'] = async (input) => {
+    const previous = candidates.get(input.projectId);
+    if (previous) {
+      await previous.stop();
+      candidates.delete(input.projectId);
+    }
+    const environment = await start(input.workingDirectory, false);
+    try {
+      await environment.execute('health');
+    } catch (error) {
+      await environment.stop();
+      throw error;
+    }
+    candidates.set(input.projectId, environment);
+    return {
+      environmentId: environment.name,
+      versionId: input.versionId,
+      url: environment.url,
+    };
+  };
   const prepareEnvironment: PrepareEnvironment = async (input) => {
     try {
       await supported(input.workingDirectory);
@@ -510,6 +532,11 @@ export function createDemoRuntime(options: {
     if (previous) {
       await previous.stop();
       previews.delete(input.projectId);
+    }
+    const candidate = candidates.get(input.projectId);
+    if (candidate) {
+      await candidate.stop();
+      candidates.delete(input.projectId);
     }
     const environment = await start(input.workingDirectory, true);
     try {
@@ -587,6 +614,7 @@ export function createDemoRuntime(options: {
   return {
     prepareEnvironment,
     baselineChecks,
+    candidatePreview,
     async initialize() {
       await mkdir(runtimeRoot, { recursive: true, mode: 0o700 });
       await managed(runtimeRoot);
@@ -633,6 +661,8 @@ export function createDemoRuntime(options: {
       }
     },
     async close() {
+      for (const environment of candidates.values()) await environment.stop();
+      candidates.clear();
       for (const [projectId, environment] of previews) {
         await environment.stop();
         await invalidatePreview(projectId);

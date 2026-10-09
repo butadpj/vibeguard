@@ -398,6 +398,141 @@ describe('US5: approve a checked fix and keep its checks', () => {
     assert.equal(result.verdict, 'could_not_check');
   });
 
+  test('retained protected suite uses its runtime adapter without checks.json and catches a regression', async () => {
+    const root = path.join(home, 'projects', project.id);
+    const suite = path.join(
+      root,
+      'check-sets',
+      project.latestVerification!.checkSetId,
+    );
+    await rm(path.join(suite, 'checks.json'));
+    const checkSetDigest = await directoryDigest(suite, true);
+    project.baseline!.checkSetDigest = checkSetDigest;
+    project.latestVerification!.checkSetDigest = checkSetDigest;
+    await writeFile(path.join(root, 'project.json'), JSON.stringify(project));
+    await ensureApproval();
+    let runs = 0;
+    client = createTestClient(
+      createApp({
+        workspaceDirectory: home,
+        baselineChecks: {
+          checkSetId: project.latestVerification!.checkSetId,
+          async run(input) {
+            runs += 1;
+            expect(input.goal).toEqual(project.goal);
+            expect(input.checksDirectory).toContain(
+              `/approvals/${approvalId}/checks`,
+            );
+            expect(input.targetDirectory).toContain(
+              path.join(root, 'recheck-runs'),
+            );
+            const contents = await readFile(
+              path.join(input.targetDirectory, 'app.js'),
+              'utf8',
+            );
+            // Only the external runtime is fake; approval, retained files, jobs and storage stay real.
+            return project.latestVerification!.checks.map((check) => ({
+              ...check,
+              verdict: contents.includes('FIXED')
+                ? ('passed' as const)
+                : ('failed' as const),
+            }));
+          },
+        },
+      }),
+    );
+    for (const [versionId, verdict] of [
+      ['version_candidate', 'passed'],
+      ['version_original', 'failed'],
+    ]) {
+      const start = await api('POST', `/api/projects/${project.id}/rechecks`, {
+        approvalId,
+        versionId,
+      });
+      const job = await finished(start.json.jobId);
+      expect(job).toMatchObject({
+        status: 'succeeded',
+        result: { verdict, checkSetDigest },
+      });
+      if (verdict === 'failed')
+        expect(job).toMatchObject({
+          result: {
+            checks: expect.arrayContaining([
+              expect.objectContaining({
+                explanation: expect.stringContaining('problem came back'),
+              }),
+            ]),
+          },
+        });
+    }
+    expect(runs).toBe(2);
+    expect(await readdir(path.join(root, 'recheck-runs'))).toEqual([]);
+    await writeFile(
+      path.join(root, 'approvals', approvalId, 'checks', 'crud.mjs'),
+      '// changed suite',
+    );
+    const start = await api('POST', `/api/projects/${project.id}/rechecks`, {
+      approvalId,
+      versionId: 'version_candidate',
+    });
+    expect(await finished(start.json.jobId)).toMatchObject({
+      status: 'failed',
+      error: { code: 'version_mismatch' },
+    });
+    expect(runs).toBe(2);
+  });
+
+  test('demo export includes portable service setup without changing approved app bytes', async () => {
+    const root = path.join(home, 'projects', project.id);
+    const candidate = path.join(root, 'versions', project.candidateVersion!.id);
+    await rm(candidate, { recursive: true });
+    await cp(
+      new URL('../../../fixtures/demo-crud/customer-tracker', import.meta.url),
+      candidate,
+      { recursive: true },
+    );
+    project.candidateVersion!.contentDigest = await directoryDigest(candidate);
+    await cp(
+      path.join(root, 'check-sets', project.latestVerification!.checkSetId),
+      path.join(root, 'check-sets', 'customer_crud_v1'),
+      { recursive: true },
+    );
+    project.baseline!.checkSetId = 'customer_crud_v1';
+    project.latestVerification!.checkSetId = 'customer_crud_v1';
+    await writeFile(path.join(root, 'project.json'), JSON.stringify(project));
+    await ensureApproval();
+    const start = await api('POST', `/api/projects/${project.id}/exports`, {
+      approvalId,
+      format: 'folder',
+    });
+    const job = await finished(start.json.jobId);
+    expect(job.status).toBe('succeeded');
+    const artifact = (
+      job as Extract<Job, { operation: 'export'; status: 'succeeded' }>
+    ).result;
+    expect(
+      await directoryDigest(path.join(artifact.savedLocation, 'app')),
+    ).toBe(project.candidateVersion!.contentDigest);
+    const override = JSON.parse(
+      await readFile(
+        path.join(artifact.savedLocation, 'service-setup.json'),
+        'utf8',
+      ),
+    );
+    expect(override.services.rest.environment.PGRST_ADMIN_SERVER_HOST).toBe(
+      '127.0.0.1',
+    );
+    expect(override.services.web.entrypoint).toContain(
+      'user root; master_process off; daemon off;',
+    );
+    expect(
+      await readFile(path.join(artifact.savedLocation, 'RUN.md'), 'utf8'),
+    ).toContain('-f app/compose.yaml -f service-setup.json');
+    expect(
+      await readFile(path.join(artifact.savedLocation, 'RUN.md'), 'utf8'),
+    ).toContain('localhost:4400');
+  });
+
   test('recheck validates the version', async () => {
     await ensureApproval();
     const result = await api(
