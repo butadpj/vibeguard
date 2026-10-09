@@ -19,9 +19,11 @@ docker compose up --build
 
 In a second terminal, run `pnpm --filter @vibeguard/dashboard dev`.
 
-Open **http://localhost:5173** in your browser. Click **Check connection** to confirm the runner is running.
+Open **http://localhost:5173** in your browser. The top bar shows **Runner connected** when the runner is up (click it to check again).
 
-To try approval, saving, and rechecks before the full flow exists, add the demo project in a third terminal, then click **Open demo project**. Running it again resets the demo.
+**Open project** (step 1) is connected to the runner: choose a project ZIP, open it, then **Prepare test app**. Until the app-startup adapter is plugged in, preparation honestly ends in **Setup incomplete**. To walk through the happy path anyway, switch **Demo data** on in the top bar; it replays sample results from the shared examples and labels them as demo data.
+
+To try approval, saving, and rechecks before the full flow exists, add the demo project in a third terminal, then go to **Approve & keep checking** and click **Open demo project**. Running it again resets the demo.
 
 ```sh
 docker compose exec runner pnpm --filter @vibeguard/runner seed:demo

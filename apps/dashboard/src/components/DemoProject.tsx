@@ -44,26 +44,28 @@ export function DemoProject() {
   }
 
   return (
-    <section aria-labelledby="demo-title">
-      <h2 id="demo-title">Try the demo project</h2>
-      <p>
-        Open a sample project with a fix that already passed its checks, then
-        approve it, save a copy, and rerun its checks.
-      </p>
-      <button onClick={load} disabled={busy}>
-        {busy
-          ? 'Opening…'
-          : project
-            ? 'Reload demo project'
-            : 'Open demo project'}
-      </button>
+    <div className="stack">
+      <div className="notice">
+        <strong>Demo project.</strong> Earlier steps don’t produce a checked fix
+        yet, so this step uses a seeded sample project with a fix that already
+        passed its checks.
+      </div>
+      <div className="actions">
+        <button type="button" onClick={load} disabled={busy}>
+          {busy
+            ? 'Opening…'
+            : project
+              ? 'Reload demo project'
+              : 'Open demo project'}
+        </button>
+      </div>
       {error && (
-        <p className="approval-error" role="alert">
+        <p className="alert" role="alert">
           {error}
         </p>
       )}
       {missing && (
-        <div className="demo-missing" role="alert">
+        <div className="notice" role="alert">
           <p>The demo project is not in the runner yet. Add it with:</p>
           <code>{SEED_COMMAND}</code>
           <p className="note">
@@ -73,14 +75,16 @@ export function DemoProject() {
       )}
       {project && (
         <>
-          <p className="demo-notice">
+          <p className="notice">
             <strong>Demo data.</strong> {project.name}'s earlier check results
             were seeded for development, not produced by a real repair. Saved
             checks run a stand-in script.
           </p>
-          <ApprovalPanel key={loads} project={project} />
+          <div className="panel">
+            <ApprovalPanel key={loads} project={project} />
+          </div>
         </>
       )}
-    </section>
+    </div>
   );
 }
