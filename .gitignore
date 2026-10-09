@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.vibeguard/
+.env
+.env.*
+!.env.example
+*.log

@@ -1,0 +1,25 @@
+:root {
+  --color-ink: #18352d;
+  --color-muted: #52665e;
+  --color-paper: #fafbf7;
+  --color-lime: #d2f86d;
+  --color-lime-hover: #bfe64f;
+  --color-line: #dce3da;
+  --color-soft: #f0f3eb;
+  --color-white: #fff;
+  --color-error: #9c322b;
+  --color-focus: #6e8b21;
+  --font-body: Geist, Arial, sans-serif;
+  --text-body: 1.25rem;
+  --text-note: 1rem;
+  --text-control: 1.125rem;
+  --radius-panel: 12px;
+  --radius-control: 9px;
+  --space-action: 16px;
+  --space-panel: 28px;
+  --space-section: 48px;
+  --workspace-width: 960px;
+}
+@media (max-width: 600px) {
+  :root { --text-body: 1.125rem; --space-panel: 22px; --space-section: 32px; }
+}

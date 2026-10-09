@@ -1,0 +1,4 @@
+interface:
+  display_name: "Writing High-Value Tests"
+  short_description: "Audit and refactor tests around real behavior"
+  default_prompt: "Use $writing-high-value-tests to audit this feature test suite and refactor it around high-value behavioral scenarios."
