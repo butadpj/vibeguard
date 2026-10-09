@@ -3,7 +3,6 @@ import type {
   Approval,
   ApproveFixRequest,
   CheckVerdict,
-  ErrorResponse,
   ExportArtifact,
   ExportProjectRequest,
   Job,
@@ -12,6 +11,7 @@ import type {
   RecheckRequest,
   VerificationResult,
 } from '@vibeguard/contracts';
+import { call, RunnerError } from '../runner';
 import './ApprovalPanel.css';
 
 const VERDICT_LABEL: Record<CheckVerdict, string> = {
@@ -19,40 +19,6 @@ const VERDICT_LABEL: Record<CheckVerdict, string> = {
   failed: 'Failed',
   could_not_check: 'Could not check',
 };
-
-class RunnerError extends Error {}
-
-async function call<T>(
-  url: string,
-  body?: unknown,
-  method = body === undefined ? 'GET' : 'POST',
-): Promise<T> {
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method,
-      headers:
-        body === undefined
-          ? undefined
-          : { 'Content-Type': 'application/json', 'X-VibeGuard-Request': '1' },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-  } catch {
-    throw new RunnerError(
-      'Could not reach the local runner. Start it and try again.',
-    );
-  }
-  const payload: unknown = await response.json().catch(() => null);
-  if (!response.ok) {
-    const error = (payload as ErrorResponse | null)?.error;
-    throw new RunnerError(
-      error
-        ? [error.message, error.nextStep].filter(Boolean).join(' ')
-        : 'The runner could not complete the request.',
-    );
-  }
-  return payload as T;
-}
 
 type Operation = 'export' | 'check';
 type Succeeded<O extends Operation> = Extract<

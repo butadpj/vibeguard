@@ -21,6 +21,14 @@ In a second terminal, run `pnpm --filter @vibeguard/dashboard dev`.
 
 Open **http://localhost:5173** in your browser. Click **Check connection** to confirm the runner is running.
 
+To try approval, saving, and rechecks before the full flow exists, add the demo project in a third terminal, then click **Open demo project**. Running it again resets the demo.
+
+```sh
+docker compose exec runner pnpm --filter @vibeguard/runner seed:demo
+```
+
+Without Docker, run `pnpm --filter @vibeguard/runner seed:demo` instead. The demo's earlier check results are seeded, not produced by a real repair.
+
 Install Docker with Compose before starting the backend. Keep both terminals open while you work; press **Ctrl+C** to stop. Run `docker compose up --build` again after changing backend code. Docker keeps workspace files in a named volume.
 
 The runner supports ZIP import and project lookup. Approval, export, and retained rechecks are available for checked versions, but preparation, baseline verification, and AI repair are not yet connected into a complete flow.
