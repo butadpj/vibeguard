@@ -54,3 +54,10 @@ export interface ExportProjectRequest {
   format: 'zip' | 'folder';
 }
 export type ExportProjectResponse = JobAccepted;
+/** Run an approval's retained checks on a later version. The job is a
+ * `check` job; its result lists any check that passed at approval and fails now. */
+export interface RecheckRequest {
+  approvalId: ApprovalId;
+  versionId: VersionId;
+}
+export type RecheckResponse = JobAccepted;

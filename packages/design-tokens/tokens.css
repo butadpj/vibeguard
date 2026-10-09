@@ -8,6 +8,10 @@
   --color-soft: #f0f3eb;
   --color-white: #fff;
   --color-error: #9c322b;
+  --color-error-bg: #fff0ec;
+  --color-green: #246044;
+  --color-green-bg: #e8f3e7;
+  --color-control-line: #bccbbf;
   --color-focus: #6e8b21;
   --font-body: Geist, Arial, sans-serif;
   --text-body: 1.25rem;
@@ -15,6 +19,8 @@
   --text-control: 1.125rem;
   --radius-panel: 12px;
   --radius-control: 9px;
+  --radius-field: 8px;
+  --radius-badge: 6px;
   --space-action: 16px;
   --space-panel: 28px;
   --space-section: 48px;

@@ -46,10 +46,12 @@ Request/response aliases live in [operations/api.ts](src/operations/api.ts). Rea
 | `POST /api/projects/:id/goal/confirm` | `ConfirmGoalRequest` → `ConfirmGoalResponse` | `confirmGoalRequestExample`, `confirmedGoalExample` | Scaffolded (501) |
 | `POST /api/projects/:id/checks` | `RunChecksRequest` → `RunChecksResponse` | `checksRequestExample`, `baselineJobExample` | Scaffolded (501) |
 | `POST /api/projects/:id/repairs` | `RepairRequest` → `RepairResponse` | `repairRequestExample`, `repairJobExample`, `unsuccessfulRepairJobExample` | Scaffolded (501) |
-| `GET /api/jobs/:id` | `GetJobResponse` | Job examples, including `interruptedJobExample` | Scaffolded (501) |
+| `GET /api/jobs/:id` | `GetJobResponse` | Job examples, including `interruptedJobExample` | Implemented for in-memory jobs (US5); no restart recovery yet |
 | `POST /api/jobs/:id/cancel` | `CancelJobResponse` | `cancelledJobExample` | Scaffolded (501) |
-| `POST /api/projects/:id/approvals` | `ApproveFixRequest` → `ApproveFixResponse` | `approveRequestExample`, `approvalExample` | Scaffolded (501) |
-| `POST /api/projects/:id/exports` | `ExportProjectRequest` → `ExportProjectResponse` | `exportRequestExample`, `exportedJobExample` | Scaffolded (501) |
+| `POST /api/projects/:id/approvals` | `ApproveFixRequest` → `ApproveFixResponse` | `approveRequestExample`, `approvalExample` | Implemented (US5) on a temporary file-backed workspace |
+| `POST /api/projects/:id/exports` | `ExportProjectRequest` → `ExportProjectResponse` | `exportRequestExample`, `exportedJobExample` | Implemented (US5) |
+| `GET /api/artifacts/:id/download` | ZIP bytes | `exportSavedExample.downloadUrl` | Implemented (US5) |
+| `POST /api/projects/:id/rechecks` | `RecheckRequest` → `RecheckResponse` | `recheckRequestExample` | Implemented (US5) |
 
 Long-running operations return `JobAccepted` (`{ jobId }`). Poll the job to get its result. Success responses use the named payload directly. API failures use `ErrorResponse` (`{ error: { code, message, nextStep } }`) with an appropriate non-2xx HTTP status. Cancellation returns the current job; a completed job may finish before cancellation reaches it.
 
@@ -72,6 +74,8 @@ body.append('name', 'Task app');
 - Store attempt history on the job so cancellation, failure, and restart retain consumed attempts. Use `interrupted` when restart ends unfinished work.
 - Update this status table, operation payloads, examples, and affected consumers together. Run `pnpm check` from the repo root.
 
-The runner still needs an artifact download route for exports and diff/evidence access. Agree its access rules when implementing artifacts; example URLs do not imply it exists.
+US5 retained checks: `POST /rechecks` starts a `check` job on a later version using the checks saved with an approval. A check that passed at approval and fails now says so in its `explanation`. The runner reads retained checks from `checks.json` in the check-set folder. Each entry has `id`, `name`, `scope`, `command` (`node`, `python`, or `python3`), `args`, and `timeoutMs`. Exit code 0 is `passed`, 1 is `failed`, and anything else is `could_not_check`. The check reads the folder to test from `VIBEGUARD_TARGET_DIR`. Verification should confirm or replace this format.
+
+The ZIP download route now exists. Diff and evidence artifacts still need access rules before they are served.
 
 Next step: project storage and background jobs in [the foundation plan](../../context/backend-foundations.md).
