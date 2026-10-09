@@ -1,8 +1,9 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile, rename, rm, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
 import { inflateRawSync } from 'node:zlib';
 import type { Project } from '@vibeguard/contracts';
+import { directoryDigest } from '../../lib/directory-digest.js';
 import { ApiFailure } from '../../lib/api-errors.js';
 
 export const uploadLimit = 20 * 1024 * 1024;
@@ -148,7 +149,6 @@ export async function importProject(
   await mkdir(root, { recursive: true });
   const staging = join(root, `.import-${id}`);
   const original = join(staging, 'original');
-  const digest = createHash('sha256');
   try {
     await mkdir(original, { recursive: true });
     await writeFile(join(staging, 'upload.zip'), zip, {
@@ -165,8 +165,6 @@ export async function importProject(
       }
       await mkdir(join(target, '..'), { recursive: true });
       await writeFile(target, file.data, { flag: 'wx', mode: 0o400 });
-      digest.update(JSON.stringify([file.name, file.data.length]));
-      digest.update(file.data);
     }
     // Originals are frozen; future operations must create a separate editable copy.
     const directories = new Set([original]);
@@ -192,7 +190,7 @@ export async function importProject(
         id: randomUUID(),
         parentVersionId: null,
         kind: 'original',
-        contentDigest: `sha256:${digest.digest('hex')}`,
+        contentDigest: await directoryDigest(original, true),
       },
       candidateVersion: null,
       goal: null,

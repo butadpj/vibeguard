@@ -19,12 +19,18 @@ For direct Node development, `pnpm dev` still starts both apps. The runner defau
 | [src/features/goals](src/features/goals/goals-routes.ts) | Conversation and goal confirmation |
 | [src/features/checks](src/features/checks/checks-routes.ts) | Baseline checks |
 | [src/features/repairs](src/features/repairs/repairs-routes.ts) | Repair and recheck |
-| [src/features/approvals](src/features/approvals/approvals-routes.ts) | Approve the checked version |
-| [src/features/exports](src/features/exports/exports-routes.ts) | Save an approved project |
-| [src/features/jobs](src/features/jobs/jobs-routes.ts) | Job polling and cancellation |
+| [src/features/approvals](src/features/approvals/approvals-routes.ts) | Approve the checked version and keep its checks |
+| [src/features/exports](src/features/exports/exports-routes.ts) | Save an approved project as a ZIP or folder |
+| [src/features/jobs](src/features/jobs/jobs-routes.ts) | Job polling (cancellation still `501`) |
+| [src/features/checks](src/features/checks/checks-routes.ts) | Retained checks on later versions (baseline checks still `501`) |
+| [src/lib/release-workspace.ts](src/lib/release-workspace.ts) | Managed project/version storage that approval and export read |
+| [src/lib/job-board.ts](src/lib/job-board.ts) | One active in-memory job |
+| [src/lib/request-protection.ts](src/lib/request-protection.ts) | Local Host/origin and request-header protection for every write route |
 | [src/lib/api-errors.ts](src/lib/api-errors.ts) | Shared HTTP error responses |
 
-Health, ZIP import, and project lookup work. Remaining feature routes return `501` with `error.code: "not_implemented"`. Unknown API routes return a structured `404`. Import stores the uploaded ZIP, read-only extracted originals, and project metadata under runner-managed UUIDs. No route starts jobs yet. Use [shared fixtures](../../packages/contracts/README.md) for UI development.
+Health, ZIP import, project lookup, approvals, exports, retained rechecks, job reads, and ZIP downloads are implemented. Approval/release requires previously checked versions and protected check sets; these are not yet produced by the preparation/repair flow. Remaining operations return structured `501 not_implemented` responses. Unknown API routes return a structured `404`.
+
+All features use the configured runner workspace (`VIBEGUARD_WORKSPACE`), stored in the Compose volume. Original files remain in `original/`; candidate versions use `versions/<versionId>/`, and protected check sets use `check-sets/<id>/`. Jobs start immediately in the runner process, one active operation at a time; another start returns `409 conflict`. Jobs are lost on restart; project files and approvals persist. No queue or separate worker.
 
 ## Add a feature
 

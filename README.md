@@ -23,7 +23,7 @@ Open **http://localhost:5173** in your browser. Click **Check connection** to co
 
 Install Docker with Compose before starting the backend. Keep both terminals open while you work; press **Ctrl+C** to stop. Run `docker compose up --build` again after changing backend code. Docker keeps workspace files in a named volume.
 
-For now, you can check the connection between the dashboard and runner. We're still building project import, AI repair, and verification.
+The runner supports ZIP import and project lookup. Approval, export, and retained rechecks are available for checked versions, but preparation, baseline verification, and AI repair are not yet connected into a complete flow.
 
 ## Pick an area
 

@@ -11,11 +11,28 @@ import { createRepairsRoutes } from './features/repairs/repairs-routes.js';
 import { createApprovalsRoutes } from './features/approvals/approvals-routes.js';
 import { createExportsRoutes } from './features/exports/exports-routes.js';
 import { createJobsRoutes } from './features/jobs/jobs-routes.js';
+import { createApprovalStore } from './features/approvals/approvals-store.js';
+import type { CheckExecutor } from './features/checks/check-executor.js';
+import { createJobBoard, type JobBoard } from './lib/job-board.js';
+import {
+  createFileWorkspace,
+  type ReleaseWorkspace,
+} from './lib/release-workspace.js';
 
 /** Assemble routes without starting a server or launching local tools. */
 export function createApp(
-  options: { dashboardDirectory?: string; workspaceDirectory?: string } = {},
+  options: {
+    dashboardDirectory?: string;
+    workspaceDirectory?: string;
+    workspace?: ReleaseWorkspace;
+    jobs?: JobBoard;
+    checkExecutor?: CheckExecutor;
+  } = {},
 ) {
+  const home = options.workspaceDirectory ?? readConfig().workspaceDirectory;
+  const workspace = options.workspace ?? createFileWorkspace(home);
+  const jobs = options.jobs ?? createJobBoard();
+  const store = createApprovalStore(home);
   const app = express();
   app.disable('x-powered-by');
   app.get('/api/health', (_request, response) => {
@@ -25,18 +42,21 @@ export function createApp(
     } satisfies HealthResponse);
   });
   app.use('/api', protectRequests);
+  app.use('/api', createProjectsRoutes(home));
+  app.use('/api', createGoalsRoutes());
   app.use(
     '/api',
-    createProjectsRoutes(
-      options.workspaceDirectory ?? readConfig().workspaceDirectory,
-    ),
+    createChecksRoutes({
+      workspace,
+      store,
+      jobs,
+      executor: options.checkExecutor,
+    }),
   );
-  app.use('/api', createGoalsRoutes());
-  app.use('/api', createChecksRoutes());
   app.use('/api', createRepairsRoutes());
-  app.use('/api', createApprovalsRoutes());
-  app.use('/api', createExportsRoutes());
-  app.use('/api', createJobsRoutes());
+  app.use('/api', createApprovalsRoutes({ workspace, store }));
+  app.use('/api', createExportsRoutes({ home, workspace, store, jobs }));
+  app.use('/api', createJobsRoutes({ jobs }));
   app.use('/api', apiNotFound);
   app.use('/api', apiErrorHandler);
 

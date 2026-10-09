@@ -1,5 +1,13 @@
-import type { RequestHandler, ErrorRequestHandler } from 'express';
-import type { ErrorCode, ErrorResponse } from '@vibeguard/contracts';
+import type { RequestHandler, ErrorRequestHandler, Response } from 'express';
+import type { ApiError, ErrorCode, ErrorResponse } from '@vibeguard/contracts';
+
+export function sendApiError(
+  response: Response,
+  status: number,
+  error: ApiError,
+) {
+  response.status(status).json({ error } satisfies ErrorResponse);
+}
 
 /** Placeholder only: no input parsing, file access, or process execution. */
 export function notImplemented(operation: string): RequestHandler {
