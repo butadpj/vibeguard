@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import {
-  mkdir,
   rm,
   chmod,
   cp,
@@ -16,19 +15,9 @@ import { afterEach, beforeEach, describe, test, expect } from 'vitest';
 import { createTestClient } from './testing/request.js';
 import { createJobBoard } from './lib/job-board.js';
 import type { Job, Project, VerificationResult } from '@vibeguard/contracts';
-import { checkedProjectExample } from '@vibeguard/contracts/examples';
 import { createApp } from './app.js';
 import { directoryDigest } from './lib/directory-digest.js';
-
-// A tiny "app": its check passes only when app.js says FIXED.
-const CHECK_SCRIPT = `
-import { readFileSync } from 'node:fs';
-const code = readFileSync(process.env.VIBEGUARD_TARGET_DIR + '/app.js', 'utf8');
-const ok = code.includes('FIXED');
-console.log(ok ? 'edit saved' : 'edit did not save');
-process.exit(ok ? 0 : 1);
-`;
-const SCOPES = ['goal', 'create', 'read', 'update', 'delete'] as const;
+import { seedCheckedProject } from './testing/checked-project.js';
 
 let home: string;
 let client: ReturnType<typeof createTestClient>;
@@ -36,54 +25,7 @@ let project: Project;
 
 async function seed(): Promise<Project> {
   home = await mkdtemp(path.join(os.tmpdir(), 'vibeguard-test-'));
-  const root = path.join(
-    home,
-    'projects',
-    '00000000-0000-4000-8000-000000000001',
-  );
-  const original = path.join(root, 'versions', 'version_original');
-  const candidate = path.join(root, 'versions', 'version_candidate');
-  const checks = path.join(root, 'check-sets', 'checks_crud_v1');
-  for (const folder of [original, candidate, checks]) {
-    await mkdir(folder, { recursive: true });
-  }
-  await writeFile(path.join(original, 'app.js'), '// BUGGY\n');
-  await writeFile(path.join(candidate, 'app.js'), '// FIXED\n');
-  await writeFile(
-    path.join(candidate, 'docker-compose.yml'),
-    'services:\n  web:\n    ports:\n      - "3000:3000"\n',
-  );
-  await mkdir(path.join(candidate, 'node_modules'));
-  await writeFile(path.join(candidate, 'node_modules', 'junk.js'), 'x');
-  await writeFile(path.join(candidate, 'data.sqlite'), 'test data');
-  await writeFile(path.join(checks, 'crud.mjs'), CHECK_SCRIPT);
-  await writeFile(
-    path.join(checks, 'checks.json'),
-    JSON.stringify(
-      SCOPES.map((scope) => ({
-        id: `check_${scope}`,
-        name: `${scope} check`,
-        scope,
-        command: 'node',
-        args: ['crud.mjs'],
-        timeoutMs: 10_000,
-      })),
-    ),
-  );
-  const seeded: Project = {
-    ...structuredClone(checkedProjectExample),
-    id: '00000000-0000-4000-8000-000000000001',
-    originalVersion: {
-      ...checkedProjectExample.originalVersion,
-      contentDigest: await directoryDigest(original),
-    },
-    candidateVersion: {
-      ...checkedProjectExample.candidateVersion,
-      contentDigest: await directoryDigest(candidate),
-    },
-  };
-  await writeFile(path.join(root, 'project.json'), JSON.stringify(seeded));
-  return seeded;
+  return seedCheckedProject(home);
 }
 
 async function api(method: string, url: string, body?: unknown, headers = {}) {

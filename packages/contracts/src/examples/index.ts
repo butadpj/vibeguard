@@ -378,6 +378,10 @@ export const recheckRequestExample = {
   versionId: original.id,
 } satisfies RecheckRequest;
 
+/** ID of the checked project that `pnpm --filter @vibeguard/runner seed:demo`
+ * writes into the runner workspace, until preparation and repair produce one. */
+export const seededDemoProjectId = '00000000-0000-4000-8000-000000000001';
+
 export const demoScenarios = {
   setupIncomplete: setupIncompleteExample,
   projectReady: projectReadyExample,

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import type { HealthResponse } from '@vibeguard/contracts';
 import '@vibeguard/design-tokens/tokens.css';
 import './styles.css';
+import { DemoProject } from './components/DemoProject';
 
 function App() {
   const [status, setStatus] = useState('Connection has not been checked.');
@@ -49,6 +50,7 @@ function App() {
             {status}
           </p>
         </section>
+        <DemoProject />
       </main>
     </>
   );
