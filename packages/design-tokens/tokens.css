@@ -35,7 +35,8 @@
   --space-panel: 28px;
   --space-section: 48px;
   --workspace-width: 960px;
-  --rail-width: 300px;
+  --rail-width: 280px;
+  --topbar-height: 72px;
 }
 @media (max-width: 600px) {
   :root {

@@ -45,45 +45,52 @@ export function DemoProject() {
 
   return (
     <div className="stack">
-      <div className="notice">
-        <strong>Demo project.</strong> Earlier steps don’t produce a checked fix
-        yet, so this step uses a seeded sample project with a fix that already
-        passed its checks.
-      </div>
-      <div className="actions">
-        <button type="button" onClick={load} disabled={busy}>
-          {busy
-            ? 'Opening…'
-            : project
-              ? 'Reload demo project'
-              : 'Open demo project'}
-        </button>
-      </div>
-      {error && (
-        <p className="alert" role="alert">
-          {error}
-        </p>
-      )}
-      {missing && (
-        <div className="notice" role="alert">
-          <p>The demo project is not in the runner yet. Add it with:</p>
-          <code>{SEED_COMMAND}</code>
-          <p className="note">
-            Running the command again resets the demo, including its approval.
-          </p>
+      <div className="panel">
+        <div className="panel-head">
+          <h2>Try it with a demo project</h2>
+          <span className="badge" data-tone="neutral">
+            Demo data
+          </span>
         </div>
-      )}
-      {project && (
-        <>
-          <p className="notice">
-            <strong>Demo data.</strong> {project.name}'s earlier check results
-            were seeded for development, not produced by a real repair. Saved
-            checks run a stand-in script.
+        <p>
+          Earlier steps don’t produce a checked fix yet, so this step uses a
+          sample project whose fix already passed its checks. Its results were
+          seeded for development, not produced by a real repair, and its saved
+          checks run a stand-in script.
+        </p>
+        {error && (
+          <p className="alert" role="alert">
+            {error}
           </p>
-          <div className="panel">
-            <ApprovalPanel key={loads} project={project} />
+        )}
+        {missing && (
+          <div className="notice" role="alert">
+            <p>The demo project isn’t in the runner yet. Add it with:</p>
+            <code>{SEED_COMMAND}</code>
+            <p className="note">
+              Running the command again resets the demo, including its approval.
+            </p>
           </div>
-        </>
+        )}
+        <div className="actions">
+          <button
+            type="button"
+            className={project ? 'secondary' : undefined}
+            onClick={load}
+            disabled={busy}
+          >
+            {busy
+              ? 'Opening…'
+              : project
+                ? 'Reload demo project'
+                : 'Open demo project'}
+          </button>
+        </div>
+      </div>
+      {project && (
+        <div className="panel">
+          <ApprovalPanel key={loads} project={project} />
+        </div>
       )}
     </div>
   );
