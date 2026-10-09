@@ -34,11 +34,17 @@ For now, you can check the connection between the dashboard and runner. We're st
 | `verification` | Checks that prove a fix works |
 | `fixtures/demo-crud` | The demo app we'll test and repair |
 
-Before opening a PR, run:
+Format your changes before opening a PR, then run the checks:
 
 ```sh
+pnpm format
 pnpm check
 ```
+
+Prettier formats the dashboard, runner, shared packages, and configuration with
+one style. `pnpm check` checks formatting, types, and builds. To check formatting
+without changing files, run `pnpm format:check`. Generated files, local runner
+data, fixtures, verification files, and Markdown documents are excluded.
 
 ## Work with your AI agent
 

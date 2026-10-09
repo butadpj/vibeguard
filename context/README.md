@@ -8,6 +8,11 @@ Start with [PRODUCT.md](../PRODUCT.md) and [the demo requirements](scope-and-tec
 | Build one of the five steps in the demo | [Requirements](scope-and-tech-requirements.md) |
 | Build UI that matches the team design | [Design](../DESIGN.md) |
 | Understand the dashboard, runner, and team responsibilities | [Architecture](architecture.md) |
+| Plan backend work or find shared contracts and mock-data conventions | [Backend foundations](backend-foundations.md) |
+| Find API models, status values, example responses, and endpoint implementation status | [Shared contracts](../packages/contracts/README.md) |
+| Plan local model selection, Ollama integration, and bounded Aider repair | [Agent harness plan](agent-harness-plan.md) |
+| Compare lighter models, distillation, and repair reliability criteria | [Local AI reliability research](local-ai-reliability-research.md) |
+| Set up the demo laptop in WSL with help from a coding agent | [Demo laptop setup guide](demo-laptop-setup-guide.md) |
 | Understand preparation, offline repair, and approval | [System design](system-design.md) |
 | Work with an AI agent or prepare a PR | [Agent workflow](agent-workflow.md) |
 | See which decisions we still need to make | [Open decisions](gaps.md) |

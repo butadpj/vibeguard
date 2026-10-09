@@ -19,4 +19,4 @@ Runtime job state lives in the runner; the dashboard renders it. Future contract
 
 Keep preparation downloads distinct from offline work. Verification code in this repo is team-owned. The runtime repair process must receive only the project copy and explicitly allowed tooling, with protected checks mounted outside its write permissions.
 
-Current implementation: dashboard connection check; health endpoint; serving built UI. No project import, Docker, AI, repair, verification, or export is implemented.
+Current implementation: dashboard connection check; health endpoint; serving built UI; feature route placeholders returning 501. See [the runner route map](../apps/runner/README.md) for code locations. No project import, Docker, AI, repair, verification, or export is implemented.

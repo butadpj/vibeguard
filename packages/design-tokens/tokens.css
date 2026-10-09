@@ -21,5 +21,9 @@
   --workspace-width: 960px;
 }
 @media (max-width: 600px) {
-  :root { --text-body: 1.125rem; --space-panel: 22px; --space-section: 32px; }
+  :root {
+    --text-body: 1.125rem;
+    --space-panel: 22px;
+    --space-section: 32px;
+  }
 }

@@ -1,0 +1,17 @@
+node_modules/
+dist/
+coverage/
+.vibeguard/
+.agents/
+.codex/
+.env
+.env.*
+pnpm-lock.yaml
+
+# Product context is maintained separately from application code.
+*.md
+**/*.md
+
+# Imported projects and acceptance fixtures must remain unchanged.
+fixtures/
+verification/

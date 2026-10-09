@@ -11,10 +11,13 @@
     "build": "pnpm --filter @vibeguard/dashboard build && pnpm --filter @vibeguard/runner build",
     "start": "pnpm --filter @vibeguard/runner start",
     "typecheck": "pnpm -r --if-present typecheck",
-    "check": "pnpm typecheck && pnpm build"
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "pnpm format:check && pnpm typecheck && pnpm build"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.3"
   }
 }

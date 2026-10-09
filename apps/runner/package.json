@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "@vibeguard/contracts": "workspace:*"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",

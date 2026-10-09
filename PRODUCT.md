@@ -29,4 +29,6 @@ Planned integrations: browser dashboard + local runner, Docker test app, Ollama 
 The current implementation supports a dashboard-to-runner connection check. Project import, AI repair, verification, and export are not implemented. No real customer repair results. See context/architecture.md for implementation status.
 
 ## Product Principles
+Prioritize correct investigation, checked fixes, and stable execution over speed. A slower repair is acceptable. Show when no verified fix is ready; do not treat AI confidence or completed execution as proof.
+
 Use familiar words. Show proof rather than reassurance. Keep the founder in control of approval. Make the five stories easy to follow.
