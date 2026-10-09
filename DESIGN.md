@@ -95,7 +95,7 @@ components:
 
 ## Team repository usage
 
-Use this document as design guidance for the React dashboard. Executable starter tokens live in packages/design-tokens/tokens.css. The initial dashboard is a connection-check screen; the full five-stage layout will be implemented with its stories. Keep visual changes aligned with this document and update tokens and guidance together.
+Use this document as design guidance for the React dashboard. Executable starter tokens live in packages/design-tokens/tokens.css. The dashboard implements the five-stage shell (team decision 2026-10-10: the "Mission Control" step-rail layout in the existing palette), with Open project connected to the runner and Approve & keep checking on a seeded demo project; the middle stages show their planned purpose until connected. Keep visual changes aligned with this document and update tokens and guidance together.
 
 ## Overview
 
@@ -103,11 +103,11 @@ Use this document as design guidance for the React dashboard. Executable starter
 
 The existing promo identity becomes a spacious, readable workspace: dark green navigation, lime actions, off-white space, white task panels, and Geist typography. Five large steps sit above a founder workspace and an optional story reader. Hiding stories expands the task surfaces; conversation and goal, or report and test-app link card, can sit side by side. Body copy is 20px on desktop and 18px on phones; controls are 18px and supporting copy stays at least 16px. The matching human-readable story explains the task and supports the founder's decisions.
 
-Executable tokens live in `packages/design-tokens/tokens.css`. The current React dashboard implements a connection-check screen. Layouts and components below guide the planned five-stage flow; they do not establish implemented behavior. The CRUD stack and local model still need a real offline demo.
+Executable tokens live in `packages/design-tokens/tokens.css`. The React dashboard implements the step rail, runner status, demo-data switch, Open project, and the US5 demo. The story reader, test scenarios, and later stages below remain planned; they do not establish implemented behavior. The CRUD stack and local model still need a real offline demo.
 
 **Key Characteristics:**
 - Existing lime, ink, and Geist brand.
-- Five large horizontal steps, an optional story reader, and mobile stacking.
+- A dark green step rail beside the task column (a scrolling row on narrow screens), an optional story reader, and mobile stacking.
 - Readable 20px desktop copy, 18px controls, and 16px supporting text.
 - Restrained borders, flat panels, and plainly named states.
 
@@ -119,11 +119,13 @@ Green with green-bg indicates passed or ready states. Red with red-bg indicates 
 
 ## Typography
 
-Use bundled variable Geist, falling back to Arial and sans-serif. Desktop body and introductory copy use the body role; intro is limited to 55ch. Supporting notes and labels use 1rem (16px). Controls use 1.125rem (18px). The brand uses 28px, weight 720, and -.03em tracking. Story headings use 1.75rem/1.3 (28px) with -.02em tracking; story quotes use body size with 1.7 line height.
+Use bundled variable Geist, falling back to Arial and sans-serif. Desktop body and introductory copy use the body role; intro is limited to 55ch. Supporting notes and labels use 1rem (16px). Controls use 1.125rem (18px). The brand uses 28px, weight 720, and -.03em tracking. Story headings use 1.75rem/1.3 (28px) with -.02em tracking; story quotes use body size with 1.7 line height. Step headlines use `clamp(2rem, 3.4vw, 2.75rem)`, weight 680, 1.12 line height, and -.03em tracking, under a 14px uppercase Geist eyebrow (`Step 1 of 5`, weight 650, .08em tracking) in green. Panel titles use 1.375rem/1.3 at weight 640. All interface text uses Geist with tabular numbers; monospace (`--font-mono`, a local system stack) is reserved for code and URLs.
 
 At 1200px and below, the main headline becomes 2.375rem (38px) and step labels 1rem (16px). At 600px and below, body becomes 1.125rem (18px), the main headline 2rem (32px), titles 1.375rem (22px), and story headings 1.625rem (26px). Supporting text remains at least 16px.
 
 ## Layout
+
+Implemented shell: an ink top bar (72px, 14px 32px padding) holds the brand, a runner-status pill that rechecks on click, and a Demo data switch (lime track when on, with a lime banner below the bar while active). Below it, a 280px ink step rail sits beside the task column. Rail steps are 68px buttons with a circular number (a check when done), the step label, and a status line; the current step is lime/ink. The task column has 56px 56px 80px padding with content capped at 960px; steps use a 32px gap between the head and content, panels use 20px internal gaps, and stacks use 24px. Each step shows one panel per task: the Open project panel holds the project, its single status badge, a plain-language result, an optional progress log, collapsible technical details, and the actions. At 1000px and below, the rail becomes a horizontally scrolling row that keeps the current step in view; at 600px and below, other steps show only their numbers, the runner pill shows only its status dot (its accessible name keeps the full status), and primary actions fill the row. The rest of this section describes the original planned layout for parts not yet built.
 
 The wrapping header has a 92px minimum height, 20px 40px padding, and 16px gaps. The simulated offline toggle, story reader, test scenarios, and reset controls sit alongside the brand. A centered workspace, at most 1640px wide, places five equal step buttons across the top, followed by task and story columns: `minmax(0, 1.3fr) minmax(390px, .85fr)`. Navigation padding is 20px 32px, with 12px gaps and 60px minimum-height steps. Main content is at most 960px wide with 48px 44px 64px padding; story padding is 48px 36px. Panels have the documented padding and gap; action rows wrap. Hiding stories changes the workspace to one column and increases main width to 1480px. Inside it, task surfaces use `repeat(auto-fit, minmax(min(100%, 340px), 1fr))` with 28px gaps; direct panel children have no bottom margin.
 
@@ -145,7 +147,7 @@ Primary buttons use lime/ink and the lime-hover state. Secondary buttons are whi
 
 Primary, secondary, and quiet actions have a 52px minimum height. Textareas and text inputs fill available width with `#b5c3b7` borders and 16px padding; textareas resize vertically with a 140px minimum height. Placeholders use `#5d7065`. Selects have a 50px minimum height. Folder and ZIP file pickers fill their container and use 16px text. Their native selector buttons use soft backgrounds, line borders, 8px corners, and 14px 16px padding. On phones, selector buttons occupy their own line.
 
-Navigation shows Open project, Set goal, Check, Try the fix, and Save & check. The current step uses lime/ink, other steps use pale text on ink, and hover uses `#24493e`. Setup and check gates disable unavailable steps with .55 opacity and a not-allowed cursor. Incomplete setup blocks investigation. Result badges pair compact text with neutral, pass, or fail surfaces. Evidence rows use dividers and plain labels. The optional story reader follows the active step, with explanatory copy, a short checklist, and a separated “Why this matters” callout. Header and reader hide controls update `aria-expanded`; visibility is remembered in local storage. Test-scenario switches live in their own header disclosure, outside the founder task surfaces.
+Navigation shows Open project, Set the goal, Catch the bug, Try the fix, and Approve & save. The current step uses lime/ink, other steps use pale text on ink, and hover uses `#24493e`. Setup and check gates disable unavailable steps with .55 opacity and a not-allowed cursor. Incomplete setup blocks investigation. Result badges pair compact text with neutral, pass, or fail surfaces. Evidence rows use dividers and plain labels. The optional story reader follows the active step, with explanatory copy, a short checklist, and a separated “Why this matters” callout. Header and reader hide controls update `aria-expanded`; visibility is remembered in local storage. Test-scenario switches live in their own header disclosure, outside the founder task surfaces.
 
 Project context uses the existing 48px rounded T mark (68px in the welcome panel), the selected project name, preparation state, and a neutral badge naming the simulated internet state. Text conversation and the editable goal occupy paired panels. Replies and check reports label simulated or unverified results. The setup screen separates preparation results from the next action; its disabled buttons explain missing setup or internet.
 
