@@ -16,6 +16,7 @@ import { createExportsRoutes } from './features/exports/exports-routes.js';
 import { createJobsRoutes } from './features/jobs/jobs-routes.js';
 import { createApprovalStore } from './features/approvals/approvals-store.js';
 import type { CheckExecutor } from './features/checks/check-executor.js';
+import type { BaselineChecks } from './features/checks/checks-baseline.js';
 import { createJobBoard, type JobBoard } from './lib/job-board.js';
 import {
   createFileWorkspace,
@@ -30,6 +31,7 @@ export function createApp(
     workspace?: ReleaseWorkspace;
     jobs?: JobBoard;
     checkExecutor?: CheckExecutor;
+    baselineChecks?: BaselineChecks;
     prepareEnvironment?: PrepareEnvironment;
     goalConversation?: GoalConversation;
   } = {},
@@ -71,6 +73,8 @@ export function createApp(
       store,
       jobs,
       executor: options.checkExecutor,
+      projects,
+      baselineChecks: options.baselineChecks,
     }),
   );
   app.use('/api', createRepairsRoutes());

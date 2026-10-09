@@ -1,0 +1,11 @@
+:root { font-family: system-ui, sans-serif; color: #18362a; background: #f3f6f1; }
+main { max-width: 800px; margin: 40px auto; padding: 24px; }
+form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+label { display: grid; gap: 6px; }
+input, button { font: inherit; padding: 10px; border: 1px solid #87978b; border-radius: 6px; }
+button { cursor: pointer; background: #fff; }
+button:disabled { cursor: wait; }
+table { width: 100%; margin-top: 24px; border-collapse: collapse; }
+caption { text-align: left; margin-bottom: 12px; font-weight: 600; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid #c8d4c9; }
+td button { margin-right: 8px; }

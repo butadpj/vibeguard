@@ -1,40 +1,19 @@
-# US1 and US2 backend handoff
+# Start here
 
-The routes are ready to connect. The app startup and local model are not connected yet. Use shared mock examples for successful UI flows while those adapters are being built. No user-story changes are needed.
+Use **[customer-tracker.zip](../fixtures/demo-crud/customer-tracker.zip)** to test project import. It is a customer tracker with a local database and one intentional bug: editing looks successful, but refreshing brings back the old value.
 
-## What the UI can call
+**What works now:** uploading the ZIP and reading the saved project.
 
-| Action | Endpoint | Result |
-| --- | --- | --- |
-| Import ZIP | `POST /api/projects` | Imported `Project` |
-| Refresh project | `GET /api/projects/:id` | Saved state and active job ID |
-| Prepare test app | `POST /api/projects/:id/prepare` | `{ jobId }`; no request body |
-| Send message | `POST /api/projects/:id/messages` | `{ jobId }`; body `{ text }` |
-| Read progress/result | `GET /api/jobs/:id` | Typed job; inspect `operation`, then `status` |
-| Confirm edited goal | `POST /api/projects/:id/goal/confirm` | Confirmed goal; body `{ expectedRevisionId, goal }` |
+**What is still missing:** the backend does not automatically start the demo app, open a working preview, talk to the local model, or run real app checks yet. Those connections are still being built. Importing this ZIP will not make those steps work automatically.
 
-Every write needs `X-VibeGuard-Request: 1`. JSON writes also need `Content-Type: application/json`. Requests must come through the local dashboard/runner addresses. The runner accepts one active job; another start returns `409 conflict`. Cancellation is still `501`.
+For the frontend, use the real backend for import and project lookup. Use the shared mock data in `@vibeguard/contracts/examples` for the later screens, including conversation and goal confirmation. Keep that whole later flow in mock mode for now.
 
-The default server returns a failed preparation job with `setup_incomplete` and a failed conversation job with `model_unavailable`. These are honest missing-integration results. A failed conversation saves the founder's text but does not invent an assistant reply. A valid model response creates a proposed goal; only confirmation changes it to confirmed. Use the latest revision when confirming. Stale confirmation returns `409 version_mismatch`. Confirmation clears results and current approval tied to the earlier goal.
+If Prepare fails with `setup_incomplete`, show **Setup incomplete**. It means startup is not connected yet—not that this demo uses an unsupported framework.
 
-Import and lookup work without adapters. To build the preparation/conversation happy paths now, use the examples in `@vibeguard/contracts/examples`; label them as demo data. For route-level integration, inject fake adapters into `createApp` in tests, as in `projects-foundations.test.ts`. Use mock mode for the whole happy-path flow: a frontend-only proposed goal cannot be confirmed against the live runner because its revision was never stored there. The Docker server has no hidden mock mode.
+Our next job is to make this flow real:
 
-## What the app/environment engineer plugs in
+**Import the ZIP → start the app and database → open its preview → reproduce the bug → show the check results.**
 
-Implement `PrepareEnvironment` from `apps/runner/src/features/projects/projects-prepare.ts` and pass it to `createApp({ prepareEnvironment })` at startup.
+The model/harness work can continue separately. We do not need to wait for AI repair to build this flow.
 
-The runner provides the project/version/environment IDs, a separate writable directory, and a progress callback. Start the supported app and its real local database from that copy. Return shared setup and preview data. Report `ready` only after both services work without founder-platform services. Use the supplied environment/version IDs and a local HTTP preview URL. Return `incomplete` or `unsupported` with no previews when blocked.
-
-The adapter owns process/container lifecycle, cleanup after partial startup, and readiness checks after restart. Imported originals are never the execution directory. The runnable demo app has not been found: `fixtures/demo-crud/` contains instructions only.
-
-## What the model thread plugs in
-
-Implement `GoalConversation` from `apps/runner/src/features/goals/goals-conversation.ts` and pass it to `createApp({ goalConversation })` at startup.
-
-It receives the project ID/name, the last 20 conversation messages, and the current goal. Return `{ reply, proposedGoal }`, with a plain `GoalDraft` or `null` when asking for more details. Use the shared goal shape, including `performance: null` for non-performance goals. The runner validates output, assigns IDs/revisions, saves the reply/proposal, and leaves confirmation to the founder. The adapter must make local inference calls; it must not return hardcoded repair results.
-
-This interface is for conversation only. Harness-based edits and repair remain in the separate model/harness thread.
-
-## Verification
-
-`pnpm check` runs the combined Vitest suite. Tests exercise real HTTP parsing, routes, workspace files, revision conflicts, active jobs, and missing/malformed adapter results. App startup and model output are faked only at their adapter boundaries. Docker, actual previews, model connectivity, offline inference, and real CRUD checks remain unverified here.
+For API details, use the [contract reference](../packages/contracts/README.md). For running the demo manually, use its [setup instructions](../fixtures/demo-crud/customer-tracker/README.md). Live Docker and database behavior still need verification on the laptop.

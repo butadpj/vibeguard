@@ -31,7 +31,7 @@ Without Docker, run `pnpm --filter @vibeguard/runner seed:demo` instead. The dem
 
 Install Docker with Compose before starting the backend. Keep both terminals open while you work; press **Ctrl+C** to stop. Run `docker compose up --build` again after changing backend code. Docker keeps workspace files in a named volume.
 
-The runner supports ZIP import and project lookup. Approval, export, and retained rechecks are available for checked versions, but preparation, baseline verification, and AI repair are not yet connected into a complete flow.
+The runner supports ZIP import and project lookup. Approval, export, and retained rechecks are available for checked versions, but actual app preparation, baseline integration verification, and AI repair are not yet connected into a complete flow. Preparation and baseline routes provide adapter interfaces for those integrations.
 
 ## Pick an area
 

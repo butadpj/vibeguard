@@ -1,0 +1,62 @@
+services:
+  db:
+    image: supabase/postgres:17.6.1.136
+    environment:
+      POSTGRES_PASSWORD: synthetic-demo-postgres
+      POSTGRES_DB: postgres
+      JWT_SECRET: synthetic-demo-jwt-secret-not-for-production-2026
+      JWT_EXP: 3600
+    volumes:
+      - customer-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres', '-h', '127.0.0.1']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  schema:
+    image: supabase/postgres:17.6.1.136
+    user: '0:0'
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: synthetic-demo-postgres
+    entrypoint: ['psql']
+    command: ['-h', 'db', '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-f', '/schema.sql']
+    volumes:
+      - ./database/schema.sql:/schema.sql:ro
+  rest:
+    image: postgrest/postgrest:v14.17
+    depends_on:
+      schema:
+        condition: service_completed_successfully
+    environment:
+      PGRST_DB_URI: postgres://customer_demo_api:synthetic-demo-api@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: customer_demo_anon
+      PGRST_JWT_SECRET: synthetic-demo-jwt-secret-not-for-production-2026
+      PGRST_ADMIN_SERVER_PORT: 3001
+    healthcheck:
+      test: ['CMD', 'postgrest', '--ready']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  web:
+    image: nginx:1.28-alpine
+    # Match the runner's editable copy owner; imported copies use private modes.
+    user: '${DEMO_UID:-1000}:${DEMO_GID:-1000}'
+    entrypoint: ['nginx', '-c', '/usr/share/nginx/html/nginx.conf', '-g', 'daemon off;']
+    depends_on:
+      rest:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:${DEMO_PORT:-4400}:8080'
+    volumes:
+      - ./:/usr/share/nginx/html:ro
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8080/health']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+volumes:
+  customer-data:

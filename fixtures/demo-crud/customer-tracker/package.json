@@ -1,0 +1,6 @@
+{
+  "name": "vibeguard-customer-tracker-demo",
+  "private": true,
+  "type": "module",
+  "scripts": { "health": "node scripts/health.mjs" }
+}

@@ -1,0 +1,2 @@
+// Public synthetic-only anon token for the local demo.
+export const DEMO_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY3VzdG9tZXJfZGVtb19hbm9uIiwiaXNzIjoidmliZWd1YXJkLXN5bnRoZXRpYy1kZW1vIiwiaWF0IjoxNzY3MjI1NjAwLCJleHAiOjQxMDI0NDQ4MDB9.juzJfD64bDKWUcaKgtyBQ817yp0yGFaJ2S6mRZhVKUU';

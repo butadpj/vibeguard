@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { cp, chmod, lstat, mkdir, realpath, readdir } from 'node:fs/promises';
+import { mkdir, realpath } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import type {
   JobResultMap,
@@ -8,6 +8,7 @@ import type {
   Preview,
 } from '@vibeguard/contracts';
 import { directoryDigest } from '../../lib/directory-digest.js';
+import { copyEditableDirectory } from '../../lib/editable-copy.js';
 import { ReleaseError } from '../../lib/release-error.js';
 import { createFileWorkspace } from '../../lib/release-workspace.js';
 import type { ProjectsStore } from './projects-store.js';
@@ -38,15 +39,6 @@ function validPreview(
     );
   } catch {
     return false;
-  }
-}
-
-async function makeWritable(directory: string) {
-  await chmod(directory, 0o700);
-  for (const entry of await readdir(directory, { withFileTypes: true })) {
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) await makeWritable(path);
-    else await chmod(path, 0o600);
   }
 }
 
@@ -109,20 +101,7 @@ export async function prepareProject(
         'The environment directory is not a managed project path.',
       );
     const copy = join(environments, environmentId);
-    await cp(original, copy, {
-      recursive: true,
-      force: false,
-      errorOnExist: true,
-      filter: async (source) => {
-        if ((await lstat(source)).isSymbolicLink())
-          throw new ReleaseError(
-            'invalid_request',
-            'Project files must not contain symbolic links.',
-          );
-        return true;
-      },
-    });
-    await makeWritable(copy);
+    await copyEditableDirectory(original, copy);
     report({
       step: 'preparing',
       message: 'Starting the app and its database.',
