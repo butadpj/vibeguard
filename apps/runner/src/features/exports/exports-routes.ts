@@ -48,7 +48,8 @@ export function createExportsRoutes(deps: ExportDeps & { jobs: JobBoard }) {
       });
       return;
     }
-    response.download(found.zipPath, found.displayName);
+    // The runner wrote this path; the default .vibeguard workspace is a dot folder.
+    response.download(found.zipPath, found.displayName, { dotfiles: 'allow' });
   });
   return routes;
 }

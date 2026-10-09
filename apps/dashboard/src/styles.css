@@ -71,6 +71,22 @@ button:focus-visible {
   font-size: var(--text-note);
   color: var(--color-muted);
 }
+.demo-notice,
+.demo-missing {
+  margin: var(--space-action) 0 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-control);
+  background: var(--color-soft);
+}
+.demo-missing p {
+  margin: 0;
+}
+.demo-missing code {
+  display: block;
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-note);
+}
 @media (max-width: 600px) {
   button {
     width: 100%;
