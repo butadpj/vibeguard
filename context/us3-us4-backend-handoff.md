@@ -84,3 +84,9 @@ docker compose -f compose.yaml -f compose.demo.yaml exec runner cat /data/vibegu
 ```
 
 The file contains Docker command output and, for startup failure, service logs captured before cleanup. It survives removal of the failed test environment. Review it before sharing; raw diagnostics are not served through the project API.
+
+Dockerized preparation mounts only the required subdirectories of the runner's existing named volume, read-only. It does not translate `docker volume inspect` Mountpoint paths into host bind mounts; that translation produced a directory at `/schema.sql` on the laptop. Direct Node startup still uses explicit bind mounts with automatic source-directory creation disabled. Named-volume subpaths require a Docker Engine/Compose version supporting that feature.
+
+When the demo runner runs as root, its Nginx test container uses a single process under that same UID. This avoids forbidden temp-file ownership changes and worker user/group switching while retaining dropped capabilities, read-only app mounts, and no Docker socket. Direct non-root runner startup keeps the ordinary Nginx worker mode. This is the small local demo server, not a production serving configuration.
+
+Time-limited demo compromise: the dashboard web container joins a normal preview bridge as well as the internal database network so Docker can publish its loopback port. Database and REST have no host ports and stay on the internal network. The web container and verifiers sharing its network can access the internet. This configuration does **not** establish blocked-network/offline acceptance; restore isolated checks before claiming that milestone.

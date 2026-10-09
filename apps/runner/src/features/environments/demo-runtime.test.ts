@@ -1,4 +1,4 @@
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import {
   access,
   chmod,
@@ -61,7 +61,7 @@ afterEach(async () => {
     await rm(home, { recursive: true, force: true });
   }
 });
-async function scenario() {
+async function scenario(namedVolume = true) {
   const home = await mkdtemp(join(tmpdir(), 'vg-demo-runtime-test-'));
   homes.push(home);
   const calls: string[][] = [];
@@ -97,7 +97,7 @@ async function scenario() {
   };
   const runtime = createDemoRuntime({
     workspaceDirectory: home,
-    workspaceVolume: 'test_runner-data',
+    workspaceVolume: namedVolume ? 'test_runner-data' : undefined,
     repositoryDirectory: repo,
     docker,
   });
@@ -182,7 +182,7 @@ async function scenario() {
     reboot: async () => {
       const next = createDemoRuntime({
         workspaceDirectory: home,
-        workspaceVolume: 'test_runner-data',
+        workspaceVolume: namedVolume ? 'test_runner-data' : undefined,
         repositoryDirectory: repo,
         docker,
       });
@@ -235,6 +235,11 @@ it('imports, prepares a preview, checks a separate database, persists baseline a
     expect(s.configurations).toHaveLength(2);
     for (const config of s.configurations) {
       expect(config.networks.default.internal).toBe(true);
+      expect(config.networks.preview).toEqual({});
+      expect(config.services.web.networks).toEqual(['default', 'preview']);
+      expect(config.services.web.ports).toEqual(['127.0.0.1::8080']);
+      expect(config.services.db.networks).toBeUndefined();
+      expect(config.services.rest.networks).toBeUndefined();
       expect(config.services.db.ports).toBeUndefined();
       expect(config.services.rest.ports).toBeUndefined();
       expect(config.services.rest.environment.PGRST_ADMIN_SERVER_HOST).toBe(
@@ -242,6 +247,13 @@ it('imports, prepares a preview, checks a separate database, persists baseline a
       );
       const [uid, gid] = config.services.web.user.split(':');
       expect(config.services.web.read_only).toBe(true);
+      expect(config.services.web.cap_drop).toEqual(['ALL']);
+      expect(config.services.web.cap_add).toBeUndefined();
+      expect(config.services.web.entrypoint.at(-1)).toBe(
+        uid === '0'
+          ? 'user root; master_process off; daemon off;'
+          : 'daemon off;',
+      );
       expect(config.services.web.tmpfs).toContain(
         `/var/cache/nginx:rw,nosuid,nodev,noexec,size=16m,uid=${uid},gid=${gid},mode=0700`,
       );
@@ -431,5 +443,60 @@ it('reports an unrelated confirmed goal as inconclusive and refuses changed uplo
     expect(s.configurations).toHaveLength(2);
   } finally {
     await s.runtime.close();
+  }
+});
+
+it('keeps direct-runner bind mounts explicit and refuses Docker auto-creation of missing sources', async () => {
+  const s = await scenario(false);
+  s.cached();
+  try {
+    expect((await s.done(await s.post('/prepare'))).status).toBe('succeeded');
+    const config = s.configurations[0];
+    expect(config.volumes.workspace).toBeUndefined();
+    expect(config.services.schema.volumes[0]).toMatchObject({
+      type: 'bind',
+      target: '/schema',
+      read_only: true,
+      bind: { create_host_path: false },
+    });
+    expect(config.services.web.volumes[0]).toMatchObject({
+      type: 'bind',
+      target: '/usr/share/nginx/html',
+      read_only: true,
+      bind: { create_host_path: false },
+    });
+    expect(config.services.schema.volumes[0].source).toMatch(
+      /trusted\/database$/,
+    );
+    expect(s.calls.find((args) => args[0] === 'run')!.join(' ')).toContain(
+      `type=bind,source=${s.home}/demo-runtime/`,
+    );
+  } finally {
+    await s.runtime.close();
+  }
+});
+
+it('starts the Dockerized root-owned preview without requesting ownership or user-switch capabilities', async () => {
+  const uid = vi.spyOn(process, 'getuid').mockReturnValue(0);
+  const gid = vi.spyOn(process, 'getgid').mockReturnValue(0);
+  try {
+    const s = await scenario();
+    s.cached();
+    try {
+      expect((await s.done(await s.post('/prepare'))).status).toBe('succeeded');
+      const web = s.configurations[0].services.web;
+      expect(web.user).toBe('0:0');
+      expect(web.entrypoint.at(-1)).toBe(
+        'user root; master_process off; daemon off;',
+      );
+      expect(web.cap_drop).toEqual(['ALL']);
+      expect(web.cap_add).toBeUndefined();
+      expect(web.read_only).toBe(true);
+    } finally {
+      await s.runtime.close();
+    }
+  } finally {
+    uid.mockRestore();
+    gid.mockRestore();
   }
 });

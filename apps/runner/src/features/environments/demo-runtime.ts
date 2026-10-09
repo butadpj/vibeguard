@@ -288,9 +288,14 @@ export function createDemoRuntime(options: {
               '-c',
               '/usr/share/nginx/html/nginx.conf',
               '-g',
-              'daemon off;',
+              // Root with dropped capabilities cannot switch users or chown temp files.
+              uid === '0'
+                ? 'user root; master_process off; daemon off;'
+                : 'daemon off;',
             ],
             depends_on: { rest: { condition: 'service_healthy' } },
+            // shortcut: web and its verifier can reach the internet; restore isolated checks before offline acceptance.
+            networks: ['default', 'preview'],
             ports: ['127.0.0.1::8080'],
             volumes: [await storageMount(app, '/usr/share/nginx/html')],
             healthcheck: {
@@ -308,7 +313,7 @@ export function createDemoRuntime(options: {
             },
           },
         },
-        networks: { default: { internal: true } },
+        networks: { default: { internal: true }, preview: {} },
         volumes: {
           data: {},
           ...(options.workspaceVolume
