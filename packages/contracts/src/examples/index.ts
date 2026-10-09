@@ -7,6 +7,7 @@ import type {
   ErrorResponse,
   ExportArtifact,
   ExportProjectRequest,
+  RecheckRequest,
   Goal,
   HealthResponse,
   Job,
@@ -372,6 +373,10 @@ export const exportRequestExample = {
   approvalId: approvalExample.id,
   format: 'zip',
 } satisfies ExportProjectRequest;
+export const recheckRequestExample = {
+  approvalId: approvalExample.id,
+  versionId: original.id,
+} satisfies RecheckRequest;
 
 export const demoScenarios = {
   setupIncomplete: setupIncompleteExample,
