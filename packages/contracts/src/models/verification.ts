@@ -30,6 +30,8 @@ export interface VerificationResult {
   goalRevisionId: GoalRevisionId;
   /** Same protected check set must be used before and after repair. */
   checkSetId: string;
+  /** Protected suite identity; absent on older synthetic examples. New baseline/repair checks bind it. */
+  checkSetDigest?: string;
   verdict: CheckVerdict;
   checks: CheckResult[];
 }

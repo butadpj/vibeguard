@@ -1,0 +1,9 @@
+# Trusted runner controls Docker. App/verifier/agent containers never mount this socket.
+services:
+  runner:
+    user: '0:0'
+    environment:
+      VIBEGUARD_DEMO_RUNTIME: '1'
+      VIBEGUARD_WORKSPACE_VOLUME: '${COMPOSE_PROJECT_NAME:-vibeguard}_runner-data'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

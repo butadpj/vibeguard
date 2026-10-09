@@ -2,7 +2,7 @@
 
 We use **Aider to edit code**, **Ollama to run the local model**, and **the VibeGuard runner to control the repair and check its results**.
 
-**Status:** the laptop calculator trial passed. Real CRUD repair and container isolation still need proof. This document describes the planned integration.
+**Status:** the laptop calculator trial passed. The isolated wrapper, standalone customer-tracker trial, and repair job operation are now implemented locally. Agent-environment behavioral checks pass with external fakes; real CRUD repair, container isolation, CPU timeout calibration, and founder QA still need laptop proof. See [the runnable harness guide](../harness/README.md).
 
 ## The flow
 
@@ -53,7 +53,7 @@ We design the repair around these principles:
 
 - **Diagnose before editing.** Trace the user action through application logic to persistence. Cite relevant code and observed failures. Separate facts from hypotheses; request missing evidence instead of inventing logs or results.
 - **Fix the cause.** Explain why the change should correct the failure. Keep the scope focused, preserve working behavior, and handle errors without reporting false success.
-- **Improve the affected code's structure.** Assume the imported project may mix UI, business logic, and database calls in one JavaScript file. Untangle the affected path into clear responsibilities, give persistence an explicit interface, and handle failures explicitly. Refactor as much as the reliable fix needs, explain why, and protect working behavior with integration tests. Preserve sound existing structure where present; do not preserve broken patterns for consistency.
+- **Keep clear responsibilities.** Preserve sound existing boundaries. Introduce structure only when the smallest complete, reliable fix needs it; do not mandate restructuring. Handle persistence failures explicitly and protect working behavior through application journeys with fakes at genuine external seams.
 - **Protect behavior with integration tests.** Exercise public application actions across real production layers. Cover the reported failure, a neighboring regression, and relevant error behavior. Fake external dependencies at clear seams; do not mock the whole orchestrator.
 - **Review before handoff.** Compare the diff with the plan. Flag unexpected file changes, weakened validation, and dependency or schema changes. Use independent check results as evidence; the model's review cannot establish acceptance.
 

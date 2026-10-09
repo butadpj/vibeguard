@@ -348,12 +348,6 @@ export function OpenProject({
               {issue.message}
               {issue.nextStep && ` ${issue.nextStep}`}
             </p>
-            {issue.code === 'setup_incomplete' && (
-              <p className="note">
-                This usually means app startup isn’t connected in VibeGuard yet,
-                not that your app is unsupported.
-              </p>
-            )}
           </details>
         )}
 

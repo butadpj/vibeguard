@@ -28,7 +28,7 @@ For direct Node development, `pnpm dev` still starts both apps. The runner defau
 | [src/lib/request-protection.ts](src/lib/request-protection.ts) | Local Host/origin and request-header protection for every write route |
 | [src/lib/api-errors.ts](src/lib/api-errors.ts) | Shared HTTP error responses |
 
-Health, ZIP import, project lookup, approvals, exports, retained rechecks, job reads, and ZIP downloads are implemented. Approval/release requires previously checked versions and protected check sets; these are not yet produced by the preparation/repair flow. Remaining operations return structured `501 not_implemented` responses. Unknown API routes return a structured `404`.
+Health, ZIP import, project lookup, approvals, exports, retained rechecks, repair job plumbing, job reads, and ZIP downloads are implemented. Repair produces checked versions only when its isolated agent, protected verifier, and candidate preview adapters are supplied; the default server reports `harness_unavailable`. Cancellation still returns structured `501 not_implemented`. Unknown API routes return a structured `404`.
 
 All features use the configured runner workspace (`VIBEGUARD_WORKSPACE`), stored in the Compose volume. Original files remain in `original/`; candidate versions use `versions/<versionId>/`, and protected check sets use `check-sets/<id>/`. Jobs start immediately in the runner process, one active operation at a time; another start returns `409 conflict`. Jobs are lost on restart; project files and approvals persist. No queue or separate worker.
 
@@ -71,3 +71,19 @@ See the [US1/US2 handoff](../../context/us1-us2-backend-handoff.md). Cancellatio
 Inject a trusted `BaselineChecks` adapter through `createApp({ baselineChecks })`. Its `checkSetId` resolves to the runner-managed project's check-set directory. The runner creates a fresh editable copy, validates structured evidence, checks original/suite digests before publication, and removes the scratch copy. The adapter owns real app/database startup, finite timeouts, and cleanup. It must exercise application behavior and persisted data with goal/create/read/update/delete coverage. Missing coverage is inconclusive. The default Docker server has no verifier adapter and reports `check_unavailable` after setup/goal gates pass. These routes do not establish actual CRUD verification yet.
 
 Digest checks do not sandbox a process. Enforce protected suite/original/metadata permissions when connecting the agent. See the [integration handoff](../../context/us1-us2-backend-handoff.md).
+
+## Local repair jobs
+
+`POST /api/projects/:id/repairs` accepts the shared `{ sourceVersionId, goalRevisionId, baselineVerificationId }` and returns a repair job ID. It requires ready setup, the imported original, the current confirmed goal, and its failed baseline. The operation shares the in-memory single-job board with checks, preparation, and export. Polling exposes progress and attempts, including failures before publication.
+
+Supply `createApp({ repairHarness, baselineChecks })`. The harness contains the isolated agent, relevant skill principles as actual text, and the environment owner's candidate-preview callback. Verification reuses `BaselineChecks`; it must start a fresh real PostgreSQL environment for each copy and clean it up. No preparation or default baseline adapter is replaced by this work. The standalone trial uses the same operation with a dedicated Docker qualification helper. See [harness/README.md](../../harness/README.md) for the command, required `VIBEGUARD_MODELS_DIRECTORY`, replaceable settings, permissions/network design, and integration limitations.
+
+Each of two attempts permits one read-only diagnosis and one edit invocation. The runner requires a complete focused plan, reviews actual fix/test file changes, runs supplemental tests, and verifies a distinct frozen candidate through protected checks. All goal/CRUD scopes must pass. A successful exact-version preview publishes the checked candidate; exhaustion or an inconclusive verifier publishes none. Evidence stays under `projects/<id>/repairs/<trialId>/attempt-<n>/`, separate from agent mounts. Approval rejects changed candidate/suite bytes and saves the checked version identity. The live Docker/CPU/PostgreSQL trial, timeout calibration, offline rehearsal, and founder QA are still laptop-only proof; fake model/storage tests do not establish them.
+
+## Customer-tracker runtime and repair evidence
+
+Enable the concrete demo preparation/baseline adapters with `docker compose -f compose.yaml -f compose.demo.yaml up --build`. Only the trusted runner receives Docker access. It starts reviewed services against separate managed copies, downloads only missing images during preparation, requires cached images for checks, and removes each check database afterward. Protected suite digests include the client/helper bytes. On startup it cleans its recorded disposable environments and invalidates old previews; project files, goals, and results remain. Live container/database and offline behavior remain unverified.
+
+`GET /api/projects/:id/repair-evidence` serves the latest recorded attempts for the current goal. `GET /api/projects/:id/diffs/:artifactId` serves the exact checked candidate's text changes. Both require `X-VibeGuard-Request: 1`, local origin/Host checks, and return uncached structured contracts. Raw prompts/tool logs are private. Candidate/original bytes must match the saved diff before a checked diff is served.
+
+See the [US3/US4 handoff](../../context/us3-us4-backend-handoff.md) for the supported goal, frontend reads, and laptop validation. The default server still has no local conversation or qualified repair harness.

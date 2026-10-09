@@ -11,6 +11,8 @@ import { createProjectsRoutes } from './features/projects/projects-routes.js';
 import { createGoalsRoutes } from './features/goals/goals-routes.js';
 import { createChecksRoutes } from './features/checks/checks-routes.js';
 import { createRepairsRoutes } from './features/repairs/repairs-routes.js';
+import { createRepairEvidenceRoutes } from './features/repairs/repair-evidence-routes.js';
+import type { RepairHarness } from './features/repairs/repairs-run.js';
 import { createApprovalsRoutes } from './features/approvals/approvals-routes.js';
 import { createExportsRoutes } from './features/exports/exports-routes.js';
 import { createJobsRoutes } from './features/jobs/jobs-routes.js';
@@ -34,6 +36,7 @@ export function createApp(
     baselineChecks?: BaselineChecks;
     prepareEnvironment?: PrepareEnvironment;
     goalConversation?: GoalConversation;
+    repairHarness?: RepairHarness;
   } = {},
 ) {
   const home = options.workspaceDirectory ?? readConfig().workspaceDirectory;
@@ -77,8 +80,18 @@ export function createApp(
       baselineChecks: options.baselineChecks,
     }),
   );
-  app.use('/api', createRepairsRoutes());
+  app.use(
+    '/api',
+    createRepairsRoutes({
+      projects,
+      workspace,
+      jobs,
+      baselineChecks: options.baselineChecks,
+      repairHarness: options.repairHarness,
+    }),
+  );
   app.use('/api', createApprovalsRoutes({ workspace, store }));
+  app.use('/api', createRepairEvidenceRoutes({ projects }));
   app.use('/api', createExportsRoutes({ home, workspace, store, jobs }));
   app.use('/api', createJobsRoutes({ jobs }));
   app.use('/api', apiNotFound);

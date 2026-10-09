@@ -4,13 +4,15 @@ Use **[customer-tracker.zip](../fixtures/demo-crud/customer-tracker.zip)** to te
 
 **What works now:** uploading the ZIP and reading the saved project.
 
-**What is still missing:** the backend does not automatically start the demo app, open a working preview, talk to the local model, or run real app checks yet. Those connections are still being built. Importing this ZIP will not make those steps work automatically.
+**Demo startup and checks now have an opt-in Docker configuration.** Use the command in the [US3/US4 handoff](us3-us4-backend-handoff.md). Its live app/database behavior still needs a laptop test. The ordinary backend command has no startup adapter; importing the ZIP alone does not enable it.
 
-For the frontend, use the real backend for import and project lookup. Use the shared mock data in `@vibeguard/contracts/examples` for the later screens, including conversation and goal confirmation. Keep that whole later flow in mock mode for now.
+**Still missing:** local model conversation and qualified repair integration.
 
-If Prepare fails with `setup_incomplete`, show **Setup incomplete**. It means startup is not connected yet—not that this demo uses an unsupported framework.
+For the frontend, use the real backend for import, project lookup, and opt-in preparation. Use shared mock data for conversation and later screens while those integrations are pending. Keep mock conversation and confirmation together; their example goal IDs cannot be used on a real imported project.
 
-Our next job is to make this flow real:
+If Prepare fails with `setup_incomplete`, show **Setup incomplete**. Read its message: the ordinary backend command has no demo startup adapter; the opt-in configuration can instead report a real startup or readiness failure. This error does not mean the framework is unsupported.
+
+The next laptop test is:
 
 **Import the ZIP → start the app and database → open its preview → reproduce the bug → show the check results.**
 

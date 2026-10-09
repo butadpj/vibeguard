@@ -9,6 +9,7 @@ import { isSafeId } from '../../lib/confined-path.js';
 import { ReleaseError } from '../../lib/release-error.js';
 import type { ReleaseWorkspace } from '../../lib/release-workspace.js';
 import type { ApprovalStore } from './approvals-store.js';
+import { directoryDigest } from '../../lib/directory-digest.js';
 
 const CRUD_SCOPES = ['create', 'read', 'update', 'delete'] as const;
 
@@ -149,6 +150,13 @@ export async function approveFix(
       'Run the checks again before approving.',
     );
   }
+
+  if (
+    verification.checkSetDigest &&
+    (verification.checkSetDigest !== baseline.checkSetDigest ||
+      (await directoryDigest(checkSet, true)) !== verification.checkSetDigest)
+  )
+    throw stale('The protected checks changed after verification.');
 
   const existing = (await deps.store.list(projectId)).find(
     ({ approval }) =>

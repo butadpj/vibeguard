@@ -77,7 +77,7 @@ export function requireBaseline(project: Project, request: RunChecksRequest) {
   return project.goal;
 }
 
-function validateChecks(value: unknown): CheckResult[] {
+export function validateChecks(value: unknown): CheckResult[] {
   const fail = () => {
     throw new ReleaseError(
       'check_unavailable',
@@ -236,6 +236,7 @@ export async function runBaseline(
       versionId: request.versionId,
       goalRevisionId: request.goalRevisionId,
       checkSetId: suite.checkSetId,
+      checkSetDigest: checksDigest,
       verdict: checks.some((check) => check.verdict === 'failed')
         ? 'failed'
         : checks.some((check) => check.verdict === 'could_not_check')

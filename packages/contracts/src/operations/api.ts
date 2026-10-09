@@ -8,6 +8,10 @@ import type { Goal, GoalDraft } from '../models/goal.js';
 import type { Job, JobAccepted } from '../models/job.js';
 import type { Project } from '../models/project.js';
 import type { Approval } from '../models/release.js';
+import type {
+  RepairEvidenceResponse,
+  RepairDiffResponse,
+} from '../models/repair-evidence.js';
 
 /** Multipart/form-data: file is a ZIP; name is an optional display label.
  * Browser clients supply File/Blob; server adapters validate incoming bytes. */
@@ -39,6 +43,8 @@ export interface RepairRequest {
   baselineVerificationId: VerificationId;
 }
 export type RepairResponse = JobAccepted;
+export type GetRepairEvidenceResponse = RepairEvidenceResponse;
+export type GetRepairDiffResponse = RepairDiffResponse;
 export type GetJobResponse = Job;
 /** Cancellation response is the current job; completion can win the race. */
 export type CancelJobResponse = Job;

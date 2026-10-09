@@ -1,0 +1,45 @@
+.check-report > ul,
+.check-report details ul {
+  padding: 0;
+  list-style: none;
+}
+.check-report > ul > li {
+  padding-block: var(--space-action);
+  border-top: 1px solid var(--color-line);
+}
+.check-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-action);
+}
+.check-heading h3 {
+  font-size: var(--text-body);
+}
+.check-report,
+.repair-evidence {
+  overflow-wrap: anywhere;
+}
+.source-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-action);
+}
+.source-comparison pre {
+  max-height: 28rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--text-note);
+  padding: var(--space-action);
+  background: var(--color-soft);
+  border-radius: var(--radius-field);
+}
+.repair-attempts {
+  padding-left: var(--space-panel);
+}
+@media (max-width: 600px) {
+  .source-comparison {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

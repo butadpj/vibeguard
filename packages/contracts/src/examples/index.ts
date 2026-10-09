@@ -15,6 +15,8 @@ import type {
   Project,
   RepairRequest,
   RepairResult,
+  RepairEvidenceResponse,
+  RepairDiffResponse,
   RunChecksRequest,
   SendMessageRequest,
   VerificationResult,
@@ -390,3 +392,31 @@ export const demoScenarios = {
   repairUnsuccessful: unsuccessfulRepairJobExample,
   exportSaved: exportedJobExample,
 };
+
+/** Synthetic text for evidence/diff screens; no observed runtime result. */
+export const repairDiffExample = {
+  artifactId: repairCheckedExample.diffArtifactId,
+  projectId: checkedVerificationExample.projectId,
+  versionId: candidate.id,
+  verificationId: checkedVerificationExample.id,
+  changes: [
+    {
+      file: 'customers.js',
+      before: '// Synthetic unsaved edit',
+      after: '// Synthetic persisted edit',
+    },
+  ],
+} satisfies RepairDiffResponse;
+export const repairEvidenceExample = {
+  projectId: checkedVerificationExample.projectId,
+  sourceVersionId: original.id,
+  goalRevisionId: confirmedGoalExample.revisionId,
+  attempts: [
+    {
+      attempt: repairCheckedExample.attempts[0],
+      durationMs: 1200,
+      changes: repairDiffExample.changes,
+      verification: checkedVerificationExample,
+    },
+  ],
+} satisfies RepairEvidenceResponse;

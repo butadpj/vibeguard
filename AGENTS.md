@@ -7,3 +7,5 @@ For API, shared model, or mock-data work, start with packages/contracts/README.m
 For UI work, read DESIGN.md and apps/dashboard/AGENTS.md. For runner work, read apps/runner/AGENTS.md. Preserve local work. Never read or expose real credentials, .env files, imported customer data, or private project contents without task-specific authorization; use sanitized examples.
 
 Keep changes small enough to integrate during the hackathon. Do not add frameworks, packages, or new architecture layers without a concrete need. Run pnpm check before completing code changes. Report what works, what remains simulated or incomplete, and any verification limitations.
+
+Write documentation around the reader's next action. Setup guides should give required variables, copyable commands, expected results, and what to do on failure. Put implementation details and integration contracts in separate engineering notes. Use plain language and short sections; read the guide as a first-time user before finishing.

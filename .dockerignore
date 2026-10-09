@@ -7,5 +7,10 @@
 **/.env.*
 **/.vibeguard
 **/*.log
-fixtures
-verification
+fixtures/**
+!fixtures/demo-crud/
+!fixtures/demo-crud/customer-tracker/
+!fixtures/demo-crud/customer-tracker/**
+verification/**
+!verification/demo-crud/
+!verification/demo-crud/**

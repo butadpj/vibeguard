@@ -2,7 +2,7 @@
 
 Build shared contracts first so engineers can implement their stories with matching dummy data. Replace mock implementations as the runner operations become available.
 
-Current implementation: `/api/health`, ZIP import with preserved originals, persisted project lookup, serving the dashboard, and the US5 approval/export/recheck operations on seeded checked versions. Shared TypeScript contracts and typed fixtures now live in [packages/contracts](../packages/contracts/README.md). Use its map for payloads and endpoint implementation status. Preparation and goal API plumbing is implemented with adapter interfaces. App/database startup and local model conversation still need adapters. Baseline API plumbing is implemented with a trusted verifier adapter; the real protected CRUD suite is not connected yet. Repair and cancellation remain planned. See the [US1/US2 handoff](us1-us2-backend-handoff.md).
+Current implementation: import/storage, single in-memory jobs, preparation/goal/baseline routes, bounded repair orchestration, and approval/export/rechecks. The opt-in demo configuration connects app/database preparation and the protected CRUD verifier; live Docker behavior remains unverified. Local conversation and qualified repair/preview adapters still need integration. Cancellation remains planned. Use the [contract status map](../packages/contracts/README.md) and [US3/US4 handoff](us3-us4-backend-handoff.md).
 
 ## Where agents should look
 

@@ -21,7 +21,7 @@ In a second terminal, run `pnpm --filter @vibeguard/dashboard dev`.
 
 Open **http://localhost:5173** in your browser. The top bar shows **Runner connected** when the runner is up (click it to check again).
 
-**Open project** (step 1) is connected to the runner: choose a project ZIP, open it, then **Prepare test app**. Until the app-startup adapter is plugged in, preparation honestly ends in **Setup incomplete**. To walk through the happy path anyway, switch **Demo data** on in the top bar; it replays sample results from the shared examples and labels them as demo data.
+**Open project** (step 1) is connected to the runner: choose a project ZIP, open it, then **Prepare test app**. The ordinary command has no app-startup adapter, so preparation ends in **Setup incomplete**. To enable the customer-tracker startup and baseline adapters, use the [demo backend command](context/us3-us4-backend-handoff.md); live Docker behavior still needs verification. To walk through the happy path anyway, switch **Demo data** on in the top bar; it replays sample results from the shared examples and labels them as demo data.
 
 To try approval, saving, and rechecks before the full flow exists, add the demo project in a third terminal, then go to **Approve & keep checking** and click **Open demo project**. Running it again resets the demo.
 
@@ -33,7 +33,7 @@ Without Docker, run `pnpm --filter @vibeguard/runner seed:demo` instead. The dem
 
 Install Docker with Compose before starting the backend. Keep both terminals open while you work; press **Ctrl+C** to stop. Run `docker compose up --build` again after changing backend code. Docker keeps workspace files in a named volume.
 
-The runner supports ZIP import and project lookup. Approval, export, and retained rechecks are available for checked versions, but actual app preparation, baseline integration verification, and AI repair are not yet connected into a complete flow. Preparation and baseline routes provide adapter interfaces for those integrations.
+Catch the bug and Try the fix now call the runner, follow job progress, and display saved checks, evidence, and code changes. A checked candidate with a matching preview can be opened for human testing. The complete live flow still requires the local conversation adapter, qualified repair harness, candidate preview adapter, and laptop runtime verification. See the [US3/US4 handoff](context/us3-us4-backend-handoff.md).
 
 ## Pick an area
 

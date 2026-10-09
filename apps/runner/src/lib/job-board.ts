@@ -8,6 +8,7 @@ import type {
   JobProgress,
   JobResultMap,
   ProjectId,
+  RepairAttempt,
   VersionId,
 } from '@vibeguard/contracts';
 
@@ -21,7 +22,10 @@ export interface JobBoard {
       versionId: VersionId | null;
       message: string;
     },
-    work: (report: (progress: JobProgress) => void) => Promise<JobResultMap[O]>,
+    work: (
+      report: (progress: JobProgress) => void,
+      recordAttempt: (attempt: RepairAttempt) => void,
+    ) => Promise<JobResultMap[O]>,
   ): JobId;
   get(jobId: JobId): Job | null;
   getActive(): Job | null;
@@ -76,7 +80,20 @@ export function createJobBoard(): JobBoard {
         id,
         (async () => {
           try {
-            const result = await work((progress) => update(id, { progress }));
+            const result = await work(
+              (progress) => update(id, { progress }),
+              (attempt) => {
+                const current = jobs.get(id)!;
+                const attempts = current.repairAttempts.filter(
+                  (item) => item.number !== attempt.number,
+                );
+                update(id, {
+                  repairAttempts: [...attempts, attempt].sort(
+                    (a, b) => a.number - b.number,
+                  ),
+                });
+              },
+            );
             update(id, {
               status: 'succeeded',
               result,

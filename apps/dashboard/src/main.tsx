@@ -4,6 +4,7 @@ import type { HealthResponse, Project } from '@vibeguard/contracts';
 import '@vibeguard/design-tokens/tokens.css';
 import './styles.css';
 import { ApprovalPanel } from './components/ApprovalPanel';
+import { CheckRepairPanel } from './components/CheckRepairPanel';
 import { DemoProject } from './components/DemoProject';
 import { OpenProject, setupLabel } from './components/OpenProject';
 import { StepRail, type RailStep } from './components/StepRail';
@@ -171,7 +172,19 @@ function App() {
     },
     ...[1, 2, 3].map((index) => ({
       label: STEPS[index].label,
-      status: ready ? 'Coming soon' : 'Needs a ready test app',
+      status: !ready
+        ? 'Needs a ready test app'
+        : index === 1
+          ? project?.goal?.status === 'confirmed'
+            ? 'Confirmed'
+            : 'Needs a confirmed goal'
+          : index === 2
+            ? project?.baseline
+              ? 'Results available'
+              : 'Not checked'
+            : project?.candidateVersion
+              ? 'Candidate available'
+              : 'Not repaired',
       done: false,
       disabled: !ready,
       disabledReason: gate,
@@ -279,7 +292,17 @@ function App() {
                     onContinue={() => go(1)}
                   />
                 ))}
-              {item.upcoming && (
+              {(index === 2 || index === 3) && project && (
+                <CheckRepairPanel
+                  key={`${demo}:${project.id}:${index}:${project.goal?.revisionId ?? ''}`}
+                  project={project}
+                  demo={demo}
+                  operation={index === 2 ? 'check' : 'repair'}
+                  onProject={onProject}
+                  onContinue={() => go(index + 1)}
+                />
+              )}
+              {index === 1 && item.upcoming && (
                 <section className="panel" aria-label="Coming soon">
                   <div className="panel-head">
                     <h2>What you’ll do here</h2>

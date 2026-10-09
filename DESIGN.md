@@ -95,7 +95,7 @@ components:
 
 ## Team repository usage
 
-Use this document as design guidance for the React dashboard. Executable starter tokens live in packages/design-tokens/tokens.css. The dashboard implements the five-stage shell (team decision 2026-10-10: the "Mission Control" step-rail layout in the existing palette), with Open project connected to the runner and Approve & keep checking on a seeded demo project; the middle stages show their planned purpose until connected. Keep visual changes aligned with this document and update tokens and guidance together.
+Use this document as design guidance for the React dashboard. Executable starter tokens live in packages/design-tokens/tokens.css. The dashboard implements the five-stage shell (team decision 2026-10-10: the "Mission Control" step-rail layout in the existing palette), with Open project connected to the runner and Approve & keep checking on a seeded demo project; Catch the bug and Try the fix now follow runner jobs and show saved reports, evidence, text changes, and checked candidate preview links; Set the goal remains a placeholder. Keep visual changes aligned with this document and update tokens and guidance together.
 
 ## Overview
 

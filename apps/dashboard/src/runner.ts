@@ -37,21 +37,18 @@ async function send<T>(url: string, init: RequestInit): Promise<T> {
 }
 
 /** Call the local runner. Throws a RunnerError with founder-readable text.
- * Every write carries the local-dashboard header; JSON writes add a content type. */
+ * Every request carries the local-dashboard header, including protected evidence reads; JSON writes add a content type. */
 export function call<T>(
   url: string,
   body?: unknown,
   method = body === undefined ? 'GET' : 'POST',
 ): Promise<T> {
-  const write = method !== 'GET';
   return send<T>(url, {
     method,
-    headers: write
-      ? {
-          'X-VibeGuard-Request': '1',
-          ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
-        }
-      : undefined,
+    headers: {
+      'X-VibeGuard-Request': '1',
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+    },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
@@ -78,6 +75,10 @@ export async function waitForJob<O extends JobOperation>(
 ): Promise<JobResultMap[O]> {
   while (alive()) {
     const job = await call<Job>(`/api/jobs/${encodeURIComponent(jobId)}`);
+    if (job.operation !== operation)
+      throw new RunnerError(
+        'The runner returned a different operation. Refresh the project.',
+      );
     onProgress?.(job);
     if (job.status === 'failed') {
       throw new RunnerError(
