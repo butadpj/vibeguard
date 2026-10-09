@@ -13,7 +13,17 @@
   --color-green-bg: #e8f3e7;
   --color-control-line: #bccbbf;
   --color-focus: #6e8b21;
+  --color-ink-raised: #24493e;
+  --color-on-ink: #fafbf7;
+  --color-on-ink-muted: #c8d6ce;
+  --color-on-ink-alert: #ff9b8f;
+  --color-field-line: #b5c3b7;
+  --color-placeholder: #5d7065;
+  --color-app-mark-bg: #e5edd4;
+  --color-app-mark-ink: #29452d;
   --font-body: Geist, Arial, sans-serif;
+  --font-mono:
+    ui-monospace, 'Cascadia Mono', Consolas, 'SFMono-Regular', monospace;
   --text-body: 1.25rem;
   --text-note: 1rem;
   --text-control: 1.125rem;
@@ -25,6 +35,8 @@
   --space-panel: 28px;
   --space-section: 48px;
   --workspace-width: 960px;
+  --rail-width: 280px;
+  --topbar-height: 72px;
 }
 @media (max-width: 600px) {
   :root {

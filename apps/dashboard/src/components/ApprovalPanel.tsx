@@ -5,13 +5,12 @@ import type {
   CheckVerdict,
   ExportArtifact,
   ExportProjectRequest,
-  Job,
   JobAccepted,
   Project,
   RecheckRequest,
   VerificationResult,
 } from '@vibeguard/contracts';
-import { call, RunnerError } from '../runner';
+import { call, RunnerError, waitForJob } from '../runner';
 import './ApprovalPanel.css';
 
 const VERDICT_LABEL: Record<CheckVerdict, string> = {
@@ -19,35 +18,6 @@ const VERDICT_LABEL: Record<CheckVerdict, string> = {
   failed: 'Failed',
   could_not_check: 'Could not check',
 };
-
-type Operation = 'export' | 'check';
-type Succeeded<O extends Operation> = Extract<
-  Job,
-  { operation: O; status: 'succeeded' }
->['result'];
-
-/** Poll a job until it finishes. Throws with the job's own error message. */
-async function waitForJob<O extends Operation>(
-  jobId: string,
-  operation: O,
-  alive: () => boolean,
-): Promise<Succeeded<O>> {
-  while (alive()) {
-    const job = await call<Job>(`/api/jobs/${encodeURIComponent(jobId)}`);
-    if (job.status === 'failed') {
-      throw new RunnerError(
-        [job.error.message, job.error.nextStep].filter(Boolean).join(' '),
-      );
-    }
-    if (job.status === 'cancelled')
-      throw new RunnerError('The job was cancelled.');
-    if (job.status === 'succeeded' && job.operation === operation) {
-      return job.result as Succeeded<O>;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 800));
-  }
-  throw new RunnerError('Stopped waiting.');
-}
 
 function Results({ result }: { result: VerificationResult }) {
   const headline =
