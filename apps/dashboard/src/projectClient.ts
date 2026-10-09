@@ -44,9 +44,11 @@ async function followLive(
   onProgress: (message: string) => void,
 ): Promise<Project> {
   try {
-    await waitForJob(jobId, 'prepare', alive, (job: Job) =>
-      onProgress(job.progress.message),
-    );
+    // Only running jobs describe a real step; a finished job's progress is a
+    // generic "Done." / "The job did not finish." and project.setup explains the outcome.
+    await waitForJob(jobId, 'prepare', alive, (job: Job) => {
+      if (job.status === 'running') onProgress(job.progress.message);
+    });
   } catch (caught) {
     // A failed job or a job lost to a runner restart: the project record is
     // the source of truth for setup state, so fall through and refresh it.
