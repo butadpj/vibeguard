@@ -10,6 +10,7 @@ export function readConfig(environment: NodeJS.ProcessEnv = process.env) {
     host: environment.VIBEGUARD_HOST ?? '127.0.0.1',
     port: 4310,
     ollamaUrl: environment.VIBEGUARD_OLLAMA_URL ?? 'http://127.0.0.1:11434',
+    jevosUrl: environment.VIBEGUARD_JEVOS_URL?.trim() || undefined,
     goalModel:
       goalProvider === 'openrouter'
         ? environment.VIBEGUARD_GOAL_CLOUD_MODEL ||

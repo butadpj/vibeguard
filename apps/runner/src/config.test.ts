@@ -49,3 +49,11 @@ it('selects cloud goal settings independently from repair', () => {
     'VIBEGUARD_GOAL_PROVIDER',
   );
 });
+
+it('keeps Jevos disabled until its local service is configured', () => {
+  expect(readConfig({}).jevosUrl).toBeUndefined();
+  expect(readConfig({ VIBEGUARD_JEVOS_URL: '   ' }).jevosUrl).toBeUndefined();
+  expect(
+    readConfig({ VIBEGUARD_JEVOS_URL: 'http://jevos:8017' }).jevosUrl,
+  ).toBe('http://jevos:8017');
+});

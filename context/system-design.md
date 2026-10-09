@@ -48,7 +48,7 @@ Aider supports local Ollama models. Test its repair quality and speed on the dem
 - Keep original files and customer data separate. Keep checks outside the agent’s writable files.
 - Approval saves the exact checked code, service setup, run instructions, and retained checks as a separate project copy. Rerun retained checks on later local versions. Changed code needs new checks; changed goals also need confirmation.
 
-V1 uses text. Cloud voice, Jev, Codex, and E2B leave the required flow. Local voice and GitHub sharing can follow.
+V1 uses text. Hosted Jev, cloud voice, Codex, and E2B leave the required flow. Optional local jevos selects goal-clarification questions on the CPU; Qwen writes goal drafts and repairs. See [jevos setup](jevos-setup.md). Local voice and GitHub sharing can follow.
 
 References: [Ollama local-only mode](https://docs.ollama.com/faq#how-do-i-disable-ollama-cloud-features) · [Aider with Ollama](https://aider.chat/docs/llms/ollama.html) · [Docker image downloads](https://docs.docker.com/reference/cli/docker/image/pull/).
 

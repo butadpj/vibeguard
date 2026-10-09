@@ -15,6 +15,7 @@ services:
       VIBEGUARD_CLOUD_MODEL: '${VIBEGUARD_CLOUD_MODEL:-}'
       OPENROUTER_API_KEY: '${OPENROUTER_API_KEY:-}'
       VIBEGUARD_GOAL_MODEL: '${VIBEGUARD_GOAL_MODEL:-qwen2.5-coder:7b}'
+      VIBEGUARD_JEVOS_URL: '${VIBEGUARD_JEVOS_URL:-}'
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     volumes:

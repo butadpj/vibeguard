@@ -6,6 +6,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { loadEnvFile } from 'node:process';
 import { createDemoRuntime } from './features/environments/demo-runtime.js';
 import { createGoalConversation } from './features/goals/ollama-conversation.js';
+import { createJevosConversation } from './features/goals/jevos-conversation.js';
 import {
   createRepairHarness,
   selectRepairProfile,
@@ -56,18 +57,25 @@ const repairHarness =
         preview: demo.candidatePreview,
       })
     : undefined;
+const goalConversation = createGoalConversation({
+  provider: config.goalProvider,
+  apiKey: process.env.OPENROUTER_API_KEY,
+  url: config.ollamaUrl,
+  model: config.goalModel,
+});
 const app = createApp({
   dashboardDirectory,
   workspaceDirectory: config.workspaceDirectory,
   prepareEnvironment: demo?.prepareEnvironment,
   baselineChecks: demo?.baselineChecks,
   repairHarness,
-  goalConversation: createGoalConversation({
-    provider: config.goalProvider,
-    apiKey: process.env.OPENROUTER_API_KEY,
-    url: config.ollamaUrl,
-    model: config.goalModel,
-  }),
+  goalConversation:
+    config.jevosUrl && config.goalProvider === 'ollama'
+      ? createJevosConversation({
+          url: config.jevosUrl,
+          fallback: goalConversation,
+        })
+      : goalConversation,
 });
 const server = app.listen(config.port, config.host, () => {
   writeEvent({
@@ -76,6 +84,10 @@ const server = app.listen(config.port, config.host, () => {
     port: config.port,
     goal_provider: config.goalProvider,
     goal_model: config.goalModel,
+    decision_model:
+      config.jevosUrl && config.goalProvider === 'ollama'
+        ? 'jevos-v4'
+        : undefined,
     repair_enabled: Boolean(repairHarness),
     repair_provider: repairProfile.provider ?? 'ollama',
     repair_model: repairProfile.model,

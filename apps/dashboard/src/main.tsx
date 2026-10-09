@@ -210,11 +210,12 @@ function App() {
     <>
       <header className="topbar">
         <span className="brand">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
-            <path d="M9 12l2 2 4-4" />
-          </svg>
-          VibeGuard
+          <img
+            src="/brand/vibeguard-logo-lime.png"
+            alt="VibeGuard"
+            width="745"
+            height="160"
+          />
         </span>
         <button
           type="button"

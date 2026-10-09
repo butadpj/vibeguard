@@ -36,6 +36,8 @@ Install Docker with Compose before starting the backend. Keep both terminals ope
 
 Set the goal, Catch the bug, and Try the fix call the runner, follow job progress, and display goals, checks, evidence, and code changes. A checked candidate with a matching preview can be opened for human testing, approved, exported, and rechecked. Manage AI settings in .env; example.env documents cloud and local Qwen for both goal conversation and repair. The demo Compose configuration reads those settings, and both modes use individual workspace-volume file mounts. See the [US3/US4 handoff](context/us3-us4-backend-handoff.md) for setup and direct-host alternatives. Live offline qualification remains pending.
 
+For faster local goal clarification, add the optional [jevos CPU decision service](context/jevos-setup.md). It selects a short missing-detail question; Qwen still drafts goals and repairs code. Preparation downloads the pinned binary and model once. The Compose overlay keeps jevos on a private local network and selects local goal conversation.
+
 ## Pick an area
 
 | Folder | Work |

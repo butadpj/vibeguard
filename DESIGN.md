@@ -119,6 +119,8 @@ Green with green-bg indicates passed or ready states. Red with red-bg indicates 
 
 ## Typography
 
+Brand assets live in `apps/dashboard/public/brand`: the angular V SVG icon and transparent Geist PNG wordmark use ink; the lime wordmark is used on the dashboard's ink top bar. The SVG also serves as the favicon. Keep the reference's angular V silhouette and use the documented palette.
+
 Use bundled variable Geist, falling back to Arial and sans-serif. Desktop body and introductory copy use the body role; intro is limited to 55ch. Supporting notes and labels use 1rem (16px). Controls use 1.125rem (18px). The brand uses 28px, weight 720, and -.03em tracking. Story headings use 1.75rem/1.3 (28px) with -.02em tracking; story quotes use body size with 1.7 line height. Step headlines use `clamp(2rem, 3.4vw, 2.75rem)`, weight 680, 1.12 line height, and -.03em tracking, under a 14px uppercase Geist eyebrow (`Step 1 of 5`, weight 650, .08em tracking) in green. Panel titles use 1.375rem/1.3 at weight 640. All interface text uses Geist with tabular numbers; monospace (`--font-mono`, a local system stack) is reserved for code and URLs.
 
 At 1200px and below, the main headline becomes 2.375rem (38px) and step labels 1rem (16px). At 600px and below, body becomes 1.125rem (18px), the main headline 2rem (32px), titles 1.375rem (22px), and story headings 1.625rem (26px). Supporting text remains at least 16px.

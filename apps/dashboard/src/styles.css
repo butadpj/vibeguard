@@ -195,14 +195,10 @@ button.quiet:disabled:hover {
   font-weight: 720;
   letter-spacing: -0.03em;
 }
-.brand svg {
-  width: 28px;
-  height: 28px;
-  fill: none;
-  stroke: var(--color-lime);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.brand img {
+  display: block;
+  width: 186.25px;
+  height: 40px;
 }
 .pill {
   min-height: 44px;
@@ -704,6 +700,10 @@ h2 {
   }
   .brand {
     font-size: 1.25rem;
+  }
+  .brand img {
+    width: 149px;
+    height: 32px;
   }
   .pill {
     min-height: 44px;
