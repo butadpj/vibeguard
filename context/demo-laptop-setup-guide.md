@@ -212,10 +212,21 @@ In your actual `vibeguard` folder:
 ```sh
 pnpm install
 pnpm check
-pnpm dev
+docker compose up --build
 ```
 
-Open **http://localhost:5173** in your Windows browser and click **Check connection**. Keep the terminal running. Checkpoint: the dashboard reaches the runner. This does not connect the AI yet or prove the demo app/database works.
+Use a second Ubuntu terminal in the same folder:
+
+```sh
+curl -fsS http://127.0.0.1:4310/api/health
+pnpm --filter @vibeguard/dashboard dev
+```
+
+If your chosen Docker Engine requires sudo, use `sudo docker compose up --build` consistently until the agent helps configure access. Open **http://localhost:5173** in your Windows browser and click **Check connection**. Keep both terminals running. Checkpoint: the dashboard reaches the Dockerized runner. This does not connect the AI yet or prove the demo app/database works.
+
+The runner stores project files in the `runner-data` volume at `/data/vibeguard`. Use `docker compose down` to stop it while retaining that volume; do not add `--volumes`/`-v` when preserving imported projects. The backend thread owns the actual persistence test and import implementation. See the current [runner instructions](../apps/runner/README.md).
+
+Ollama remains a WSL service outside the runner container. Installing Aider in WSL proves the tooling works, but does not install it inside the runner image. The future AI integration must provide the model connection and isolated harness execution. Current job design permits one active in-memory task, rejects concurrent work, and loses job state on restart while retaining project files.
 
 ## 8. Hand off to the real repair spike
 

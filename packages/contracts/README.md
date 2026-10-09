@@ -2,7 +2,7 @@
 
 Start here for API payloads, shared models, statuses, and dummy data. Import types from `@vibeguard/contracts`; import fixtures from `@vibeguard/contracts/examples`.
 
-These contracts describe the agreed first integration shape. The runner currently implements only health. The runner registers other listed routes as `501 not_implemented` placeholders. The artifact download URL in fixtures is planned. TypeScript types do not validate HTTP input; add runtime validation when implementing routes.
+These contracts describe the agreed first integration shape. The runner implements health, ZIP import, and project lookup. The runner registers other listed routes as `501 not_implemented` placeholders. The artifact download URL in fixtures is planned. TypeScript types do not validate HTTP input; add runtime validation when implementing routes.
 
 ```ts
 import type { GetProjectResponse, GetJobResponse } from '@vibeguard/contracts';
@@ -39,8 +39,8 @@ Request/response aliases live in [operations/api.ts](src/operations/api.ts). Rea
 | Endpoint | Types / response | Examples | Runner |
 | --- | --- | --- | --- |
 | `GET /api/health` | `HealthResponse` | `healthExample` | Implemented |
-| `POST /api/projects` | `ImportProjectRequest` → `ImportProjectResponse` | See ZIP upload below; `importedProjectExample` | Scaffolded (501) |
-| `GET /api/projects/:id` | `GetProjectResponse` | `demoScenarios` | Scaffolded (501) |
+| `POST /api/projects` | `ImportProjectRequest` → `ImportProjectResponse` | See ZIP upload below; `importedProjectExample` | Implemented |
+| `GET /api/projects/:id` | `GetProjectResponse` | `demoScenarios` | Implemented |
 | `POST /api/projects/:id/prepare` | `PrepareProjectResponse` | `acceptedJobExample`, `preparingJobExample`, `preparedJobExample` | Scaffolded (501) |
 | `POST /api/projects/:id/messages` | `SendMessageRequest` → `SendMessageResponse` | `messageRequestExample`, `conversationJobExample` | Scaffolded (501) |
 | `POST /api/projects/:id/goal/confirm` | `ConfirmGoalRequest` → `ConfirmGoalResponse` | `confirmGoalRequestExample`, `confirmedGoalExample` | Scaffolded (501) |
@@ -59,7 +59,7 @@ For ZIP import, send multipart form data with `file` and optional `name`. The `B
 const body = new FormData();
 body.append('file', selectedZipFile);
 body.append('name', 'Task app');
-// Send body to POST /api/projects when the runner implements it.
+// POST /api/projects with headers: { 'X-VibeGuard-Request': '1' }.
 ```
 
 ## Rules for consumers and agents
@@ -69,7 +69,7 @@ body.append('name', 'Task app');
 - Treat fixtures as synthetic UI data. They provide no proof of repair capability. Clone fixtures before mutating them in a stateful mock client.
 - Treat IDs as opaque. The runner resolves files and environments. `savedLocation` is display text, not an input path.
 - The runner must validate goal/version/check references, protected check identity, required CRUD verdicts, and the two-attempt limit. Types alone cannot enforce these runtime rules.
-- Store attempt history on the job so cancellation, failure, and restart retain consumed attempts. Use `interrupted` when restart ends unfinished work.
+- Keep one active job in memory and reject another start with `409 conflict`. Container restart loses job state; the founder retries. Persist candidate files and evidence separately when those features arrive.
 - Update this status table, operation payloads, examples, and affected consumers together. Run `pnpm check` from the repo root.
 
 The runner still needs an artifact download route for exports and diff/evidence access. Agree its access rules when implementing artifacts; example URLs do not imply it exists.

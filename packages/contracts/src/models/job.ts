@@ -21,7 +21,6 @@ export const jobOperations = [
 ] as const;
 export type JobOperation = (typeof jobOperations)[number];
 export const jobStatuses = [
-  'queued',
   'running',
   'succeeded',
   'failed',
@@ -29,7 +28,6 @@ export const jobStatuses = [
 ] as const;
 export type JobStatus = (typeof jobStatuses)[number];
 export const jobSteps = [
-  'queued',
   'preparing',
   'preparing_model',
   'investigating',
@@ -78,7 +76,7 @@ export interface JobResultMap {
   export: ExportArtifact;
 }
 type JobLifecycle<R> =
-  | { status: 'queued' | 'running'; result: null; error: null }
+  | { status: 'running'; result: null; error: null }
   | { status: 'succeeded'; result: R; error: null }
   | { status: 'failed'; result: null; error: ApiError }
   | { status: 'cancelled'; result: null; error: null };

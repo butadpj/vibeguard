@@ -1,4 +1,6 @@
 import express from 'express';
+import { readConfig } from './config.js';
+import { protectRequests } from './lib/request-protection.js';
 import { existsSync } from 'node:fs';
 import type { HealthResponse } from '@vibeguard/contracts';
 import { apiNotFound, apiErrorHandler } from './lib/api-errors.js';
@@ -11,7 +13,9 @@ import { createExportsRoutes } from './features/exports/exports-routes.js';
 import { createJobsRoutes } from './features/jobs/jobs-routes.js';
 
 /** Assemble routes without starting a server or launching local tools. */
-export function createApp(options: { dashboardDirectory?: string } = {}) {
+export function createApp(
+  options: { dashboardDirectory?: string; workspaceDirectory?: string } = {},
+) {
   const app = express();
   app.disable('x-powered-by');
   app.get('/api/health', (_request, response) => {
@@ -20,9 +24,13 @@ export function createApp(options: { dashboardDirectory?: string } = {}) {
       service: 'vibeguard-runner',
     } satisfies HealthResponse);
   });
-  // These routers currently return 501 and perform no mutations.
-  // Add request/origin protection and validation before implementing writes.
-  app.use('/api', createProjectsRoutes());
+  app.use('/api', protectRequests);
+  app.use(
+    '/api',
+    createProjectsRoutes(
+      options.workspaceDirectory ?? readConfig().workspaceDirectory,
+    ),
+  );
   app.use('/api', createGoalsRoutes());
   app.use('/api', createChecksRoutes());
   app.use('/api', createRepairsRoutes());

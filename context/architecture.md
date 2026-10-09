@@ -2,6 +2,8 @@
 
 Accepted starting direction, 2026-10-09: pnpm workspace; React + Vite + TypeScript SPA; long-running Node.js + TypeScript local runner. No monorepo task orchestrator needed yet.
 
+Contributors start the runner with `docker compose up --build`; workspace files live in a named Docker volume. Jobs run in that runner process, one at a time, with in-memory state and no queue. Job execution remains unimplemented.
+
 During development Vite proxies /api to the runner on 127.0.0.1:4310. After building, the runner serves the dashboard and API from that same local address. The founder product will package both together, launch the runner, and open the browser. pnpm commands are contributor setup, not the finished nontechnical installation experience. Installer format and supported OS remain undecided.
 
 ## Ownership

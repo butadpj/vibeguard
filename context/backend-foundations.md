@@ -2,7 +2,7 @@
 
 Build shared contracts first so engineers can implement their stories with matching dummy data. Replace mock implementations as the runner operations become available.
 
-Current implementation: `/api/health` and serving the dashboard. Shared TypeScript contracts and typed fixtures now live in [packages/contracts](../packages/contracts/README.md). Use its map for payloads and endpoint implementation status. The remaining runner operations are planned.
+Current implementation: `/api/health`, ZIP import with preserved originals, persisted project lookup, and serving the dashboard. Shared TypeScript contracts and typed fixtures now live in [packages/contracts](../packages/contracts/README.md). Use its map for payloads and endpoint implementation status. The remaining runner operations are planned.
 
 ## Where agents should look
 
@@ -37,7 +37,7 @@ Agents changing an API should read that map, update the owning contract and exam
 | Agent execution | Run the local model and harness against an allowed copy, capture output, limit repair attempts |
 | Verification and export | Protect checks, retain evidence, tie approval to checked code, save a runnable project |
 
-Persist project metadata, goals, jobs, versions, evidence, and approvals locally. Choose the storage format during implementation. Define how restart recovery handles interrupted jobs; do not leave them marked running.
+Run the runner in Docker Compose. Persist project files and metadata in its workspace volume. Keep one active job in memory; start it immediately and return `409 conflict` when busy. Container restart loses job state and requires a retry. No queue or persisted job recovery for this stage.
 
 ## Proposed HTTP operations
 
@@ -59,7 +59,7 @@ Use ZIP upload for the first import path unless the team agrees otherwise. A bro
 
 Long-running operations return a job ID. Start with dashboard polling through the common job endpoint.
 
-Each job needs an ID, project ID, operation, current step, founder-readable progress, typed result or structured error, and applicable goal-revision/code-version references. Proposed lifecycle: `queued | running | succeeded | failed | cancelled`.
+Each job needs an ID, project ID, operation, current step, founder-readable progress, typed result or structured error, and applicable goal-revision/code-version references. Proposed lifecycle: `running | succeeded | failed | cancelled`.
 
 Separate execution status from check verdicts. A completed check job can succeed while its result reports `failed` checks. Verification verdicts are `passed | failed | could_not_check`. Errors should include a stable code, readable message, and a next step where available.
 

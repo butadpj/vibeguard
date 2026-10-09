@@ -1,0 +1,28 @@
+services:
+  runner:
+    build:
+      context: .
+      dockerfile: apps/runner/Dockerfile
+    init: true
+    ports:
+      - '127.0.0.1:4310:4310'
+    environment:
+      VIBEGUARD_HOST: 0.0.0.0
+      VIBEGUARD_WORKSPACE: /data/vibeguard
+    volumes:
+      - runner-data:/data/vibeguard
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4310/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+
+volumes:
+  runner-data:

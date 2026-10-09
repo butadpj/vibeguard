@@ -1,12 +1,19 @@
 # Local runner
 
-Run `pnpm dev` from the repo root. The runner listens on `127.0.0.1:4310`; Vite forwards `/api` requests to it.
+From the repo root, run `docker compose up --build`. Compose runs the backend at `http://127.0.0.1:4310`. Start the dashboard separately with `pnpm --filter @vibeguard/dashboard dev`; Vite forwards `/api` requests to the runner.
+
+Compose stores workspace files in the `runner-data` volume at `/data/vibeguard`. Rebuild after backend changes. `docker compose down` stops/removes the container and retains the volume. The image currently includes only the runner; AI tooling and app containers come with their features.
+
+Jobs will run inside this runner process, one operation at a time, with in-memory progress. No queue or separate worker. Restarting the container loses job state; project files survive. Job execution is not implemented yet.
+
+For direct Node development, `pnpm dev` still starts both apps. The runner defaults to loopback and `.vibeguard` relative to its working directory. Configure `VIBEGUARD_WORKSPACE` to change storage. Compose sets `VIBEGUARD_HOST=0.0.0.0` inside the container and publishes the port only on host loopback.
 
 ## Find the code
 
 | File or folder | Responsibility |
 | --- | --- |
 | [src/index.ts](src/index.ts) | Start the server and handle shutdown |
+| [src/config.ts](src/config.ts) | Listener and workspace configuration |
 | [src/app.ts](src/app.ts) | Mount feature routes, API errors, and the built dashboard |
 | [src/features/projects](src/features/projects/projects-routes.ts) | Import, project snapshot, preparation |
 | [src/features/goals](src/features/goals/goals-routes.ts) | Conversation and goal confirmation |
@@ -17,7 +24,7 @@ Run `pnpm dev` from the repo root. The runner listens on `127.0.0.1:4310`; Vite 
 | [src/features/jobs](src/features/jobs/jobs-routes.ts) | Job polling and cancellation |
 | [src/lib/api-errors.ts](src/lib/api-errors.ts) | Shared HTTP error responses |
 
-Health works. The feature routes return `501` with `error.code: "not_implemented"`. Unknown API routes return a structured `404`. No feature route reads uploads, changes files, or starts jobs yet. Use [shared fixtures](../../packages/contracts/README.md) for UI development.
+Health, ZIP import, and project lookup work. Remaining feature routes return `501` with `error.code: "not_implemented"`. Unknown API routes return a structured `404`. Import stores the uploaded ZIP, read-only extracted originals, and project metadata under runner-managed UUIDs. No route starts jobs yet. Use [shared fixtures](../../packages/contracts/README.md) for UI development.
 
 ## Add a feature
 
@@ -26,3 +33,17 @@ Start with its route file and the shared contract. Keep HTTP parsing, validation
 Keep feature logic beside its routes. Add shared helpers to `lib` when multiple features need them. Define shared API models only in `packages/contracts`.
 
 Before replacing a write placeholder, add origin/request protection, input validation, and confinement to managed project paths. See [AGENTS.md](AGENTS.md) for runner rules. Update the [contract status map](../../packages/contracts/README.md) when an operation works, and run `pnpm check`.
+
+## ZIP import and lookup
+
+`POST /api/projects` accepts multipart `file` and optional `name` (1–100 characters), returning the shared `Project` with `not_prepared` setup. Send `X-VibeGuard-Request: 1` on every write request. Browser origins and Host must use HTTP localhost or 127.0.0.1 on port 4310 or 5173; cross-site requests are rejected. CLI clients may omit Origin but must supply the custom header. Vite proxies the header to the runner.
+
+Uploads are limited to 20 MiB including multipart overhead, 100 MiB expanded, and 2,000 ZIP entries. Only stored/deflated regular files and directories are accepted; ZIP64, encrypted archives, links, unsafe paths, duplicate paths, corrupt content, and file/directory collisions are rejected. No imported code is executed. Originals retain exact file bytes but not archive permission bits; files are stored read-only. Keep future execution and repair confined to separate copies; these modes alone do not sandbox a process running as the runner user.
+
+`GET /api/projects/:id` loads persisted metadata. Import uses a staging directory and publishes only completed projects. It retains the exact `upload.zip`, an `original/` tree, and `project.json`. Aborted processes can leave hidden staging directories; automatic recovery/cleanup is not implemented. Version digests cover sorted file paths and bytes, not ZIP timestamps or permissions.
+
+Run `pnpm --filter @vibeguard/runner test` for Vitest, or `pnpm test` from the repo root. `pnpm check` includes the suite. Feature tests live beside their routes as `*.test.ts` and import source directly. The production build excludes tests and the testing harness.
+
+The tests send encoded HTTP requests through the real Express app with an in-process Node HTTP transport; multipart parsing, protection, routes, errors, and temporary filesystem storage stay real. They follow the platform-api pattern of app-level requests, structured response assertions, and table-driven rejection cases. Recreating the app proves persisted lookup without in-memory state; it does not prove a process or container restart. The earlier Node route/storage tests are replaced by these broader journeys. No coverage percentage is recorded.
+
+Docker startup, live HTTP health, process restart, and volume persistence still need verification on a machine with Docker available. The in-process transport does not exercise network binding or chunked HTTP responses.

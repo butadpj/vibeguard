@@ -1,5 +1,5 @@
 import type { RequestHandler, ErrorRequestHandler } from 'express';
-import type { ErrorResponse } from '@vibeguard/contracts';
+import type { ErrorCode, ErrorResponse } from '@vibeguard/contracts';
 
 /** Placeholder only: no input parsing, file access, or process execution. */
 export function notImplemented(operation: string): RequestHandler {
@@ -29,6 +29,23 @@ export const apiErrorHandler: ErrorRequestHandler = (
     next(_error);
     return;
   }
+  if (
+    _error instanceof ApiFailure ||
+    _error?.status === 413 ||
+    _error?.status === 415
+  ) {
+    response.status(_error.status).json({
+      error: {
+        code: _error instanceof ApiFailure ? _error.code : 'invalid_request',
+        message:
+          _error instanceof ApiFailure
+            ? _error.message
+            : 'Upload exceeds the limit or uses unsupported encoding.',
+        nextStep: null,
+      },
+    } satisfies ErrorResponse);
+    return;
+  }
   response.status(500).json({
     error: {
       code: 'internal_error',
@@ -37,3 +54,13 @@ export const apiErrorHandler: ErrorRequestHandler = (
     },
   } satisfies ErrorResponse);
 };
+
+export class ApiFailure extends Error {
+  constructor(
+    public status: number,
+    public code: ErrorCode,
+    message: string,
+  ) {
+    super(message);
+  }
+}
